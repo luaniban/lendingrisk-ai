@@ -242,7 +242,7 @@ def train(
             ("distribuicao_scores_teste.png", figures.plot_score_distribution,
              (y_test, test_probabilities, best_threshold), "Distribuição dos scores no teste por classe real"),
             ("importancia_atributos.png", figures.plot_importance, (importance_df,),
-             f"Importância global por permutação — {best_name}"),
+             f"Importância global por permutação ({best_name}, validação)"),
             ("estabilidade_temporal.png", figures.plot_stability, (stability,),
              f"Estabilidade por mês de emissão — {best_name}"),
             ("calibracao_teste.png", figures.plot_calibration, ({best_name: calibration_test},),

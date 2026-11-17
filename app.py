@@ -212,6 +212,11 @@ with tab_simulate:
         st.subheader("Resultado do classificador")
         for warning in analysis["warnings"]:
             st.warning(warning)
+        test_share_60 = partitions.get("teste", {}).get("proporcao_60_meses")
+        if analysis["record"].get("term") == "60 months" and test_share_60 == 0:
+            st.info("Empréstimos de **60 meses** só aparecem no treino (safras até 2013, com prazo já "
+                    "encerrado). O teste contém apenas empréstimos de 36 meses, então o desempenho do "
+                    "modelo para 60 meses **não foi avaliado**.", icon="ℹ️")
         m1, m2, m3 = st.columns(3)
         m1.metric("Probabilidade estimada de Charged Off", percent_pt(probability))
         m2.metric("Limiar de classificação", percent_pt(threshold))
@@ -239,6 +244,9 @@ with tab_simulate:
                         + ", ".join(top_features) + ".")
             st.caption("Importância global indica o que o modelo mais usa em média. Ela NÃO indica quais "
                        "atributos causaram ou pesaram mais nesta previsão individual.")
+            if partitions.get("validacao", {}).get("proporcao_60_meses") == 0:
+                st.caption("O prazo aparece com importância zero porque a validação (onde a importância é "
+                           "medida) só contém empréstimos de 36 meses; isso não prova que o prazo seja irrelevante.")
 
         st.subheader("Explicação em linguagem natural")
         st.caption(f"Gerada localmente pelo modelo {config.LLM_MODEL} via Ollama. A LLM recebe a probabilidade "
@@ -345,9 +353,11 @@ with tab_data:
 
     st.subheader("Limitações")
     st.markdown(
-        "- Dados históricos dos EUA (2007–2018): não representam o mercado brasileiro nem o atual.\n"
+        "- Dados históricos dos EUA: não representam o mercado brasileiro nem o atual.\n"
         "- `Charged Off` é um desfecho específico (baixa como perda), não qualquer atraso.\n"
-        "- Só entram empréstimos com desfecho final; isso altera a população analisada.\n"
+        "- Só entram empréstimos com desfecho final e prazo já encerrado (filtro de maturidade); "
+        "as safras de 2016–2018 ficam de fora e o teste cobre apenas os últimos meses de 2015.\n"
+        "- O teste contém apenas empréstimos de 36 meses; o desempenho para 60 meses não foi avaliado.\n"
         "- A probabilidade pode estar descalibrada em períodos diferentes do treino.\n"
         "- A importância de atributos é global e não explica casos individuais; não há explicação causal.\n"
         "- A explicação da LLM pode conter erros; os números válidos são sempre os do classificador.\n"

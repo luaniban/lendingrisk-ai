@@ -41,8 +41,23 @@ plt.rcParams.update({
 })
 
 
+def _n(value: float, decimals: int = 3) -> str:
+    """Número com vírgula decimal (pt-BR)."""
+    return f"{value:.{decimals}f}".replace(".", ",")
+
+
+def _decimal_comma(fig):
+    from matplotlib.ticker import FuncFormatter, ScalarFormatter
+    formatter = FuncFormatter(lambda v, _: f"{v:g}".replace(".", ",").replace("-", "−"))
+    for ax in fig.axes:
+        for axis in (ax.xaxis, ax.yaxis):
+            if isinstance(axis.get_major_formatter(), ScalarFormatter):
+                axis.set_major_formatter(formatter)
+
+
 def _save(fig, path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
+    _decimal_comma(fig)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
@@ -56,14 +71,17 @@ def plot_pr_curves(curves: dict, prevalence: float, path: Path, title: str):
     """curves: {nome_modelo: (y, prob)}."""
     from sklearn.metrics import average_precision_score
     fig, ax = plt.subplots(figsize=(7, 4.8))
+    upper = 0.0
     for i, (name, (y, p)) in enumerate(curves.items()):
         precision, recall, _ = precision_recall_curve(y, p)
         ap = average_precision_score(y, p)
-        ax.plot(recall, precision, color=_model_color(name, i), label=f"{name} (AP = {ap:.3f})")
+        ax.plot(recall, precision, color=_model_color(name, i), label=f"{name} (AP = {_n(ap)})")
+        upper = max(upper, precision[recall >= 0.01].max())
     ax.axhline(prevalence, color=MUTED, linewidth=1)
-    ax.annotate(f"classificador aleatório (AP ≈ {prevalence:.3f})", xy=(0.99, prevalence),
-                xytext=(0, 4), textcoords="offset points", ha="right", va="bottom", color=INK_2, fontsize=8)
-    ax.set(xlim=(0, 1), ylim=(0, 1), xlabel="Recall (Charged Off detectados)", ylabel="Precision")
+    ax.annotate(f"classificador aleatório (AP ≈ {_n(prevalence)})", xy=(0.01, prevalence),
+                xytext=(0, -4), textcoords="offset points", ha="left", va="top", color=INK_2, fontsize=8)
+    ax.set(xlim=(0, 1), ylim=(0, min(1.0, upper * 1.25)), xlabel="Recall (Charged Off detectados)",
+           ylabel="Precision")
     ax.set_title(title)
     ax.legend(loc="upper right")
     _save(fig, path)
@@ -74,7 +92,7 @@ def plot_roc_curves(curves: dict, path: Path, title: str):
     fig, ax = plt.subplots(figsize=(6, 5))
     for i, (name, (y, p)) in enumerate(curves.items()):
         fpr, tpr, _ = roc_curve(y, p)
-        ax.plot(fpr, tpr, color=_model_color(name, i), label=f"{name} (ROC-AUC = {roc_auc_score(y, p):.3f})")
+        ax.plot(fpr, tpr, color=_model_color(name, i), label=f"{name} (ROC-AUC = {_n(roc_auc_score(y, p))})")
     ax.plot([0, 1], [0, 1], color=MUTED, linewidth=1)
     ax.set(xlim=(0, 1), ylim=(0, 1), xlabel="Taxa de falsos positivos", ylabel="Taxa de verdadeiros positivos")
     ax.set_title(title)
@@ -107,7 +125,7 @@ def plot_threshold_curve(curve: pd.DataFrame, chosen: float, path: Path, title: 
     for i, (col, label) in enumerate(series):
         ax.plot(curve["limiar"], curve[col], color=SLOTS[i], label=label)
     ax.axvline(chosen, color=INK_2, linewidth=1)
-    ax.annotate(f"limiar escolhido = {chosen:.2f}", xy=(chosen, 1.0), xytext=(4, -2),
+    ax.annotate(f"limiar escolhido = {_n(chosen, 2)}", xy=(chosen, 1.0), xytext=(4, -2),
                 textcoords="offset points", va="top", color=INK, fontsize=9)
     ax.set(xlim=(0, 1), ylim=(0, 1.02), xlabel="Limiar sobre a probabilidade estimada", ylabel="Valor")
     ax.set_title(title)
@@ -127,7 +145,7 @@ def plot_confusion_matrix(matrix, path: Path, title: str):
     for i in range(2):
         for j in range(2):
             color = "#ffffff" if row_share[i, j] > 0.55 else INK
-            ax.text(j, i, f"{matrix[i, j]:,}".replace(",", ".") + f"\n{row_share[i, j]:.1%} da linha",
+            ax.text(j, i, f"{matrix[i, j]:,}".replace(",", ".") + f"\n{_n(row_share[i, j] * 100, 1)}% da linha",
                     ha="center", va="center", color=color, fontsize=10)
     ax.set_xticks([0, 1], [f"Previsto\n{lab}" for lab in labels])
     ax.set_yticks([0, 1], [f"Real\n{lab}" for lab in labels])
@@ -145,8 +163,10 @@ def plot_score_distribution(y, p, threshold: float, path: Path, title: str):
     for i, (cls, label) in enumerate([(0, "Fully Paid (real)"), (1, "Charged Off (real)")]):
         ax.hist(p[y == cls], bins=bins, density=True, histtype="step", linewidth=2, color=SLOTS[i], label=label)
     ax.axvline(threshold, color=INK_2, linewidth=1)
-    ax.annotate(f"limiar = {threshold:.2f}", xy=(threshold, ax.get_ylim()[1]), xytext=(4, -4),
-                textcoords="offset points", va="top", color=INK, fontsize=9)
+    top = ax.get_ylim()[1]
+    ax.set_ylim(0, top * 1.12)
+    ax.annotate(f"limiar = {_n(threshold, 2)}", xy=(threshold, top * 1.1), xytext=(-4, 0),
+                textcoords="offset points", ha="right", va="top", color=INK, fontsize=9)
     ax.set(xlabel="Probabilidade estimada de Charged Off", ylabel="Densidade")
     ax.set_title(title)
     ax.legend(loc="upper right")
@@ -156,13 +176,15 @@ def plot_score_distribution(y, p, threshold: float, path: Path, title: str):
 def plot_importance(importance: pd.DataFrame, path: Path, title: str):
     data = importance.sort_values("queda_ap_media")
     labels = [FEATURE_LABELS.get(a, a) for a in data["atributo"]]
-    fig, ax = plt.subplots(figsize=(7, 4.6))
+    from matplotlib.ticker import MaxNLocator
+    fig, ax = plt.subplots(figsize=(9, 4.8))
     ax.barh(labels, data["queda_ap_media"], xerr=data["desvio"], color=SLOTS[0], height=0.6,
             error_kw={"ecolor": INK_2, "elinewidth": 1, "capsize": 2})
     ax.axvline(0, color=AXIS, linewidth=0.8)
     ax.grid(axis="y", visible=False)
-    ax.set(xlabel="Queda média da AP ao embaralhar o atributo (validação)")
-    ax.set_title(title)
+    ax.xaxis.set_major_locator(MaxNLocator(6))
+    ax.set(xlabel="Queda média da AP ao embaralhar o atributo (validação; barras = desvio-padrão)")
+    fig.suptitle(title, x=0.01, ha="left", fontsize=12, fontweight="bold")
     _save(fig, path)
 
 
@@ -177,6 +199,7 @@ def plot_stability(table: pd.DataFrame, path: Path, title: str):
             ax.plot(idx, group[col], marker="o", color=SLOTS[i], label=part,
                     markeredgecolor=SURFACE, markeredgewidth=1.5)
         ax.set_ylabel(label)
+        ax.set_ylim(0, max(table[col].max() * 1.25, 0.05))
     axes[0].legend(loc="lower left")
     axes[1].set_xticks(x, table["periodo"], rotation=45, ha="right")
     axes[0].set_title(title)

@@ -157,6 +157,114 @@ filtro de maturidade**, como previsto no protocolo.
 
 ---
 
-## 3. Execuções de treinamento
+## 3. Execução oficial de treinamento (17/11/2026)
 
-*(preenchida após o treino real — números copiados de `reports/metricas.json`)*
+Comando: `python -m src.training --data data/accepted_2007_to_2018Q4.csv`, com os padrões
+fração 1,0, sem teto, filtro de maturidade ativo e semente 42.
+Ambiente: Python 3.12.16, scikit-learn 1.9.1, XGBoost 3.4.1, pandas 2.3.3 e numpy 2.5.5,
+num notebook com Intel Tiger Lake (8 threads) e 15 GiB de RAM, sem GPU.
+A execução levou **2 min 28 s** e usou no máximo **1,17 GB** de RAM (a segunda execução: 2 min 45 s e 1,18 GB). Logs em
+`reports/logs/treino_oficial_2026-11-17*.log`.
+
+**Reprodutibilidade:** o treino foi executado duas vezes com o mesmo comando. A segunda
+execução só refez os gráficos, com ajustes de formatação. As métricas das duas são
+idênticas (ver `reports/historico_execucoes.csv`).
+
+### 3.1 Dados usados
+| Etapa | Linhas |
+|---|---:|
+| Lidas do arquivo | 2.260.701 |
+| Com desfecho final (Fully Paid / Charged Off) e data válida | 1.345.310 |
+| Removidas pelo filtro de maturidade | 671.757 |
+| **Usadas no experimento** | **673.553** (14,82% Charged Off) |
+
+| Partição | Período (`issue_d`) | Linhas | Charged Off | 60 meses |
+|---|---|---:|---:|---:|
+| Treino | 2007-06 a 2015-04 | 470.714 | 14,81% | 11,68% |
+| Validação | 2015-05 a 2015-08 | 95.405 | 14,81% | 0% |
+| Teste | 2015-09 a 2015-12 | 107.434 | 14,84% | 0% |
+
+### 3.2 Comparação na validação (critério de seleção: AP)
+Fonte: `reports/comparacao_modelos.csv`. AP de um classificador aleatório = 0,148.
+
+| Modelo | AP | ROC-AUC | Brier | Log loss | ECE | Limiar F2 | Recall | Precision | Treino (s) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Regressão Logística | 0,2331 | 0,6529 | 0,1218 | 0,4025 | 0,0129 | 0,10 | 0,860 | 0,180 | 3,6 |
+| Random Forest | 0,2323 | 0,6545 | 0,1219 | 0,4013 | 0,0158 | 0,10 | 0,876 | 0,179 | 105,5 |
+| **XGBoost** | **0,2368** | **0,6583** | 0,1214 | 0,3997 | 0,0125 | 0,09 | 0,887 | 0,178 | 6,0 |
+
+**Modelo escolhido: XGBoost**, com limiar **0,09**. A vantagem sobre os outros é pequena
+(+0,004 de AP sobre a Regressão Logística). Com só 10 atributos, os três modelos
+capturam quase o mesmo sinal, e a Regressão Logística seria uma alternativa quase
+equivalente e mais interpretável.
+
+### 3.3 Avaliação final no teste (executada uma vez)
+Fonte: `reports/metricas.json` → `metricas_teste`.
+
+| Métrica | XGBoost (teste) | Referência trivial |
+|---|---:|---:|
+| Average Precision (AP) | **0,2425** | 0,1484 (aleatório) |
+| ROC-AUC | **0,6623** | 0,5 |
+| Brier | 0,1214 | 0,1264 (prever sempre 14,84%) |
+| Log loss | 0,3994 | — |
+| ECE (10 faixas) | 0,0155 | — |
+| Recall | 0,8805 | — |
+| Precision | 0,1798 | 0,1484 |
+| F1 / F2 | 0,2986 / 0,4948 | — |
+| Acurácia | 0,3862 | 0,8516 (sempre Fully Paid) |
+| Taxa sinalizada como Charged Off | 72,68% | — |
+
+Matriz de confusão (teste, 107.434 empréstimos):
+
+| | Previsto Fully Paid | Previsto Charged Off |
+|---|---:|---:|
+| **Real Fully Paid** | 27.450 | 64.043 |
+| **Real Charged Off** | 1.905 | 14.036 |
+
+### 3.4 Interpretação
+- **Desempenho modesto, mas acima do acaso e estável.** AP de 0,24 contra 0,15 do
+  aleatório, e ROC-AUC de 0,66. Validação e teste dão valores próximos (0,237 e 0,243), e
+  a AP mensal varia pouco (`estabilidade_temporal.csv`). O limite vem dos 10 atributos
+  escolhidos no Entregável 2. Variáveis como `grade` e `int_rate`, também conhecidas na
+  concessão, ficaram de fora porque já são a avaliação de risco do próprio Lending Club.
+- **O limiar por F2 é agressivo.** Ele sinaliza 73% dos empréstimos para capturar 88% dos
+  Charged Off. Para cada Charged Off detectado há 4,6 falsos alarmes (precision de 18%).
+  Por isso a acurácia (38,6%) fica abaixo da de "sempre Fully Paid" (85,2%), que não
+  detecta nenhum caso. Na prática, a saída serve para triagem e revisão humana, não para
+  decisão. A curva em `figures/limiar_validacao.png` mostra o trade-off. Um limiar maior
+  reduziria os alarmes ao custo de recall. Essa troca **não** foi feita, para manter o
+  protocolo e não ajustar nada olhando o teste.
+- **A calibração é boa, com leve subestimação.** O Brier é melhor que o da referência
+  constante e o ECE é de 1,5 p.p. No teste, a probabilidade média prevista é 13,3%
+  contra 14,8% observado. Os decis mais altos ficam cerca de 2 p.p. abaixo do observado
+  (`calibracao_teste.csv`). As probabilidades **não** foram recalibradas.
+- **Importância global (permutação na validação):** FICO > renda anual > consultas em 6
+  meses > valor > finalidade > DTI ≈ moradia. `term` aparece com 0 porque a validação só
+  tem 36 meses: embaralhar uma coluna constante não muda nada, o que não prova
+  irrelevância. `emp_length` e `revol_util` ficam perto de zero ou levemente negativos,
+  dentro do ruído.
+
+### 3.5 Análise de erros por subgrupo (teste, descritiva)
+Fonte: `reports/analise_subgrupos_teste.csv`.
+- **Moradia:** a taxa de falso positivo é de 58,6% para MORTGAGE e de 82,4% para RENT.
+  Isso acompanha a taxa real de Charged Off (12,0% e 17,6%), mas mostra que o limiar
+  único sinaliza a grande maioria dos locatários. É um ponto de atenção ética: o modelo
+  reproduz diferenças históricas entre grupos.
+- **Finalidade:** `small_business` tem 23,3% de Charged Off real e 95,9% de falso positivo;
+  `credit_card` tem 12,2% e 57,9%.
+- **`emp_length` ausente:** a taxa real é de **21,7%**, mas o score médio é de 16,3%. O
+  modelo subestima esse grupo. A causa provável é a imputação pela moda (`10+ years`),
+  justamente a categoria de menor risco, o que apaga o sinal de que "não informado" é
+  mais arriscado. **Melhoria futura:** tratar ausência como categoria própria
+  (`SimpleImputer(strategy="constant")`). Essa mudança **não** foi aplicada ao modelo
+  oficial, porque foi notada no teste e aplicá-la agora contaminaria a avaliação.
+
+### 3.6 Limitações e próximos passos
+1. A avaliação cobre só 36 meses e emissões de 2015 (efeito do filtro de maturidade).
+2. Não houve busca de hiperparâmetros. Um próximo passo seria uma busca na validação,
+   ou validação cruzada temporal dentro do treino.
+3. Com o filtro, as probabilidades refletem as safras de 2007–2015 e podem não valer para
+   outras épocas.
+4. Faltam testes de justiça com métricas formais. A análise de subgrupos é só descritiva.
+5. Para uma próxima versão: tratar ausentes como categoria, avaliar `grade`/`int_rate`
+   com aprovação da dupla e recalibrar com dados separados.
