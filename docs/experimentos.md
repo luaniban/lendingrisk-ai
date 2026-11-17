@@ -64,6 +64,12 @@ reproduz o comportamento original.
 - **Análises descritivas, que não alteram as escolhas:** calibração (tabela por decis e
   ECE), estabilidade por trimestre, subgrupos por atributo categórico e
   distribuição dos scores.
+- **Tamanho dos dados:** usar **toda a população elegível** (`--fraction 1 --max-rows 0`).
+  A amostra de 15% com teto de 150 mil linhas do starter era uma escolha para
+  economizar memória, não uma exigência metodológica. Com mais dados, as estimativas
+  do teste são menos ruidosas. Só se a execução completa não couber na máquina
+  (memória ou tempo) a fração será reduzida, e o motivo será registrado. A decisão
+  depende apenas do custo computacional, nunca do resultado.
 - **Execução oficial:** uma única execução de treino com teste, com os parâmetros
   registrados na seção 3.
 
