@@ -1,0 +1,2 @@
+criado_em_utc,arquivo,sha256,fracao,max_linhas,filtro_maturidade,ausente_como_categoria,linhas_total,ap_val_Regressão Logística,ap_val_Random Forest,ap_val_XGBoost,modelo_escolhido,limiar,ap_teste,roc_auc_teste,recall_teste,precision_teste,duracao_s
+2026-11-17T14:17:01.730723+00:00,accepted_2007_to_2018Q4.csv,3eae03c28fd9d2e8a076ebeb73507e8d4d0f44d90500decdb0936e0933d1f36a,1.0,,True,True,673553,0.23513,0.23412,0.23834,XGBoost,0.1,0.24462,0.66343,0.83727,0.18737,147.1

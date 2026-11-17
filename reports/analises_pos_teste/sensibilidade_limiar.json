@@ -1,0 +1,120 @@
+{
+  "aviso": "Análise feita DEPOIS do uso do teste reservado. É descritiva e não substitui o resultado oficial (reports/metricas.json).",
+  "modelo": "XGBoost",
+  "limiar_oficial": 0.09,
+  "dataset_sha256": "3eae03c28fd9d2e8a076ebeb73507e8d4d0f44d90500decdb0936e0933d1f36a",
+  "conferencias": {
+    "limiar_reproduzido": true,
+    "ap_teste_reproduzida": true
+  },
+  "criterios": [
+    {
+      "criterio": "Máximo F2 (oficial)",
+      "limiar": 0.09,
+      "descricao": "Prioriza recall: perder um Charged Off pesa mais que um alarme falso."
+    },
+    {
+      "criterio": "Máximo F1",
+      "limiar": 0.14,
+      "descricao": "Equilibra precision e recall."
+    },
+    {
+      "criterio": "Sinalizar 20% de maior risco",
+      "limiar": 0.1891,
+      "descricao": "Política de crédito com taxa de sinalização fixa (quantil dos scores da validação)."
+    }
+  ],
+  "resultados": [
+    {
+      "criterio": "Máximo F2 (oficial)",
+      "limiar": 0.09,
+      "particao": "validação",
+      "taxa_sinalizada": 0.73791,
+      "recall": 0.88698,
+      "precision": 0.17803,
+      "f1": 0.29653,
+      "f2": 0.49374,
+      "acuracia": 0.37672,
+      "verdadeiros_positivos": 12533,
+      "falsos_positivos": 57867,
+      "falsos_negativos": 1597,
+      "verdadeiros_negativos": 23408
+    },
+    {
+      "criterio": "Máximo F2 (oficial)",
+      "limiar": 0.09,
+      "particao": "teste",
+      "taxa_sinalizada": 0.72676,
+      "recall": 0.8805,
+      "precision": 0.17977,
+      "f1": 0.29857,
+      "f2": 0.49477,
+      "acuracia": 0.38615,
+      "verdadeiros_positivos": 14036,
+      "falsos_positivos": 64043,
+      "falsos_negativos": 1905,
+      "verdadeiros_negativos": 27450
+    },
+    {
+      "criterio": "Máximo F1",
+      "limiar": 0.14,
+      "particao": "validação",
+      "taxa_sinalizada": 0.42566,
+      "recall": 0.61748,
+      "precision": 0.21485,
+      "f1": 0.31878,
+      "f2": 0.44914,
+      "acuracia": 0.60914,
+      "verdadeiros_positivos": 8725,
+      "falsos_positivos": 31885,
+      "falsos_negativos": 5405,
+      "verdadeiros_negativos": 49390
+    },
+    {
+      "criterio": "Máximo F1",
+      "limiar": 0.14,
+      "particao": "teste",
+      "taxa_sinalizada": 0.41084,
+      "recall": 0.60517,
+      "precision": 0.21856,
+      "f1": 0.32114,
+      "f2": 0.44703,
+      "acuracia": 0.62037,
+      "verdadeiros_positivos": 9647,
+      "falsos_positivos": 34491,
+      "falsos_negativos": 6294,
+      "verdadeiros_negativos": 57002
+    },
+    {
+      "criterio": "Sinalizar 20% de maior risco",
+      "limiar": 0.1891,
+      "particao": "validação",
+      "taxa_sinalizada": 0.20008,
+      "recall": 0.34253,
+      "precision": 0.25355,
+      "f1": 0.2914,
+      "f2": 0.32007,
+      "acuracia": 0.75327,
+      "verdadeiros_positivos": 4840,
+      "falsos_positivos": 14249,
+      "falsos_negativos": 9290,
+      "verdadeiros_negativos": 67026
+    },
+    {
+      "criterio": "Sinalizar 20% de maior risco",
+      "limiar": 0.1891,
+      "particao": "teste",
+      "taxa_sinalizada": 0.18668,
+      "recall": 0.32765,
+      "precision": 0.26042,
+      "f1": 0.29019,
+      "f2": 0.31156,
+      "acuracia": 0.76217,
+      "verdadeiros_positivos": 5223,
+      "falsos_positivos": 14833,
+      "falsos_negativos": 10718,
+      "verdadeiros_negativos": 76660
+    }
+  ],
+  "criado_em_utc": "2026-11-17T14:17:41.674308+00:00"
+}

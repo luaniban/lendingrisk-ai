@@ -1,0 +1,6 @@
+Recriando as partições do treino oficial (mesma amostragem, filtro e semente)...
+                    criterio  limiar  taxa_sinalizada  recall  precision  acuracia
+         Máximo F2 (oficial)  0.0900          0.72676 0.88050    0.17977   0.38615
+                   Máximo F1  0.1400          0.41084 0.60517    0.21856   0.62037
+Sinalizar 20% de maior risco  0.1891          0.18668 0.32765    0.26042   0.76217
+tempo_total=28.81 s; rss_max=828808 KB

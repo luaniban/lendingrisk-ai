@@ -15,6 +15,9 @@ DEFAULT_DATA_FILE = "accepted_2007_to_2018Q4.csv"
 TARGET = "loan_status"
 DATE_COLUMN = "issue_d"
 SEED = 42
+# Variante pós-teste (docs/experimentos.md, seção 5): categoria própria para ausentes,
+# em vez de imputar a moda. Não é usada pelo modelo oficial.
+MISSING_CATEGORY = "nao_informado"
 
 # Versão do formato de reports/metricas.json lido pela interface.
 METRICS_SCHEMA_VERSION = 2

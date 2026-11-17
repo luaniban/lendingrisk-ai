@@ -1,0 +1,4 @@
+modelo,limiar,average_precision,roc_auc,brier,log_loss,recall,precision,f1,f2,acuracia,taxa_positiva_real,taxa_positiva_prevista,ece,tempo_treino_s
+Regressão Logística,0.1,0.23513,0.65505,0.12165,0.4018,0.85924,0.18095,0.29894,0.49108,0.40313,0.14811,0.70328,0.01229,3.8
+Random Forest,0.1,0.23412,0.65569,0.12178,0.40104,0.87672,0.17899,0.29729,0.49264,0.38615,0.14811,0.72543,0.01609,104.3
+XGBoost,0.1,0.23834,0.6591,0.12132,0.39948,0.84466,0.18588,0.3047,0.49429,0.42908,0.14811,0.67302,0.01257,4.9

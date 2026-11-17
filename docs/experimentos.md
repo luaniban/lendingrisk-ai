@@ -266,8 +266,8 @@ Fonte: `reports/analise_subgrupos_teste.csv`.
 3. Com o filtro, as probabilidades refletem as safras de 2007–2015 e podem não valer para
    outras épocas.
 4. Faltam testes de justiça com métricas formais. A análise de subgrupos é só descritiva.
-5. Para uma próxima versão: tratar ausentes como categoria, avaliar `grade`/`int_rate`
-   com aprovação da dupla e recalibrar com dados separados.
+5. Para uma próxima versão: recalibrar com dados separados. O tratamento de ausentes e a
+   decisão sobre `grade`/`int_rate` estão na seção 5.
 
 ---
 
@@ -315,3 +315,126 @@ fornecidos (FICO, renda, consultas, valor, finalidade) e não copia o exemplo.
   fidelidade.
 - Cada explicação leva de 16 a 21 s em CPU. A primeira chamada inclui carregar o modelo,
   cerca de 30 s.
+
+---
+
+## 5. Análises complementares feitas depois do teste (17/11/2026)
+
+> **Atenção:** o teste reservado já tinha sido usado na seção 3. Tudo nesta seção é
+> **descritivo**. Nada aqui muda o modelo oficial, o limiar oficial ou
+> `reports/metricas.json`. O resultado principal do projeto continua sendo o da seção 3.
+
+Decisões tomadas pela dupla em 17/11/2026, depois de verem os resultados da seção 3:
+(1) manter o limiar oficial e documentar a sensibilidade; (2) testar, como variante,
+o tempo de emprego "não informado" como categoria própria; (3) manter `grade` e
+`int_rate` fora do modelo.
+
+Para reproduzir:
+
+```bash
+.venv/bin/python -m src.pos_teste limiar --data data/accepted_2007_to_2018Q4.csv
+.venv/bin/python -m src.training --data data/accepted_2007_to_2018Q4.csv --missing-as-category \
+    --model-path models/modelo_v2_ausente_como_categoria.joblib \
+    --report-dir reports/analises_pos_teste/v2_ausente_como_categoria
+.venv/bin/python -m src.pos_teste comparar
+```
+
+### 5.1 Sensibilidade do limiar
+
+O limiar oficial (9%, máximo F2) sinaliza cerca de 73% dos empréstimos. Para mostrar o
+custo dessa escolha, comparamos dois critérios alternativos, ambos definidos **somente
+com a validação**, usando o mesmo modelo oficial (XGBoost):
+
+- **Máximo F1:** equilibra precision e recall.
+- **Sinalizar 20% de maior risco:** limiar no quantil de 80% dos scores da validação,
+  como numa política de crédito com taxa de sinalização fixa.
+
+A análise recria as partições oficiais e confere que reproduz o limiar F2 (0,09) e a AP
+de teste (0,24253) do treino oficial. As duas conferências passaram
+(`reports/analises_pos_teste/sensibilidade_limiar.json`).
+
+| Critério | Limiar | Partição | Sinaliza | Recall | Precision | Acurácia | Charged Off detectados | Alarmes falsos | Charged Off perdidos |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| **Máximo F2 (oficial)** | 9,0% | validação | 73,8% | 88,7% | 17,8% | 37,7% | 12.533 | 57.867 | 1.597 |
+| **Máximo F2 (oficial)** | 9,0% | teste | 72,7% | 88,0% | 18,0% | 38,6% | 14.036 | 64.043 | 1.905 |
+| Máximo F1 | 14,0% | validação | 42,6% | 61,7% | 21,5% | 60,9% | 8.725 | 31.885 | 5.405 |
+| Máximo F1 | 14,0% | teste | 41,1% | 60,5% | 21,9% | 62,0% | 9.647 | 34.491 | 6.294 |
+| Sinalizar 20% | 18,9% | validação | 20,0% | 34,3% | 25,4% | 75,3% | 4.840 | 14.249 | 9.290 |
+| Sinalizar 20% | 18,9% | teste | 18,7% | 32,8% | 26,0% | 76,2% | 5.223 | 14.833 | 10.718 |
+
+**Leitura:**
+
+- Não existe limiar "certo". Cada ponto da tabela troca Charged Off perdidos por alarmes
+  falsos.
+- O critério oficial perde só 1.905 dos 15.941 Charged Off do teste, mas gera 64.043
+  alarmes falsos.
+- Sinalizando 20%, os alarmes falsos caem para 14.833, mas 10.718 Charged Off passam
+  despercebidos.
+- A precision nunca passa de 26%: com só 6 atributos numéricos e 4 categóricos, o modelo
+  separa as classes de forma limitada (ROC-AUC 0,66). Mudar o limiar não resolve isso;
+  apenas escolhe qual erro aceitar.
+- Os valores da validação e do teste são próximos, ou seja, as escolhas feitas na
+  validação se mantiveram no teste.
+
+**Decisão:** o limiar oficial continua 9% (critério fixado no protocolo antes do
+treino). A tabela entra no artigo como análise de sensibilidade.
+
+### 5.2 Variante v2: tempo de emprego "não informado" como categoria própria
+
+**Motivação** (vista no teste, na seção 3.5): na versão oficial, o campo vazio de
+`emp_length` recebe a moda do treino ("10+ years"). Quem não informou teve 21,7% de
+Charged Off real no teste, mas o risco médio previsto para esse grupo foi de 16,3%.
+
+**O que mudou:** só o pré-processamento das variáveis categóricas
+(`--missing-as-category`). Ausentes passam a ser a categoria `nao_informado`, em vez da
+moda. Todo o resto seguiu o protocolo da seção 1: mesmos dados, partições e
+hiperparâmetros; seleção por AP e limiar por F2 **na validação**; teste avaliado uma vez.
+Os artefatos ficam em `reports/analises_pos_teste/v2_ausente_como_categoria/`, e o
+modelo, em `models/modelo_v2_ausente_como_categoria.joblib` (não versionado).
+
+| Métrica (teste) | v1 oficial (moda) | v2 (categoria própria) |
+|---|---:|---:|
+| Modelo escolhido na validação | XGBoost | XGBoost |
+| AP na validação | 0,2368 | 0,2383 |
+| Limiar (máximo F2 na validação) | 9% | 10% |
+| Average Precision | 0,2425 | 0,2446 |
+| ROC-AUC | 0,6623 | 0,6634 |
+| Brier | 0,1214 | 0,1213 |
+| ECE | 0,0155 | 0,0153 |
+| Recall | 88,0% | 83,7% |
+| Precision | 18,0% | 18,7% |
+| Sinaliza | 72,7% | 66,3% |
+| Grupo "não informado" (7.692 linhas): Charged Off real | 21,7% | 21,7% |
+| Grupo "não informado": risco médio previsto | 16,3% | 19,1% |
+
+**Leitura:**
+
+- As métricas que não dependem do limiar (AP, ROC-AUC, Brier, ECE) melhoraram todas um
+  pouco. A diferença é pequena (AP +0,002) e **não fizemos teste de significância**
+  (por exemplo, bootstrap pareado). Por isso, não afirmamos que a v2 é melhor de forma
+  estatisticamente comprovada.
+- No grupo "não informado", a distância entre o risco previsto e o real caiu de
+  5,3 para 2,6 pontos percentuais, cerca de metade. Esse era o objetivo da mudança.
+- O limiar F2 escolhido na validação passou de 9% para 10%. Por isso recall, precision e
+  taxa sinalizada mudam juntos e não devem ser lidos como ganho ou perda do modelo.
+
+**Decisão:** a versão oficial (seção 3) e o app continuam usando a v1. A v2 entra no
+artigo como melhoria identificada na análise de erros, a ser confirmada com dados
+novos.
+
+### 5.3 `grade` e `int_rate` ficam fora do modelo
+
+São a nota (A–G) e a taxa de juros que o **próprio Lending Club** atribui a cada
+empréstimo com o seu modelo de risco interno. Ficam fora porque:
+
+1. com elas, o modelo passaria em boa parte a copiar a avaliação do Lending Club, em
+   vez de estimar o risco a partir dos dados do solicitante, que é a pergunta do
+   projeto;
+2. no simulador, um solicitante novo não teria nota nem taxa definidas pelo Lending
+   Club;
+3. os 10 atributos foram definidos pela dupla antes do experimento.
+
+Não é vazamento de dados (as duas informações existem na concessão), e sim uma
+decisão de escopo. O experimento "com e sem `grade`" não foi executado. Fica como
+opcional em `PENDENCIAS.md`.
+

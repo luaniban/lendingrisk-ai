@@ -81,6 +81,7 @@ lendingrisk-ai/
 │   ├── figures.py          # gráficos PNG
 │   ├── training.py         # treino, seleção, teste único e artefatos
 │   ├── inference.py        # validação de artefatos/entradas para a interface
+│   ├── pos_teste.py        # análises complementares depois do teste (limiar, v1 x v2)
 │   ├── llm.py              # integração com o Ollama + verificação de consistência
 │   └── llm_demo.py         # demonstração documentada da LLM (perfis hipotéticos)
 ├── tests/                  # testes automatizados (dados sintéticos identificados)
@@ -191,6 +192,25 @@ Opções do treinamento: `--no-maturity-filter` reproduz o comportamento do star
 | `reports/historico_execucoes.csv` | Uma linha por execução (rastreabilidade) |
 | `reports/figures/*.png` | Gráficos (cada um tem um CSV correspondente) |
 
+### Análises complementares (depois do teste)
+
+Feitas depois de o teste reservado ter sido usado. São descritivas e **não alteram** o
+modelo, o limiar nem `reports/metricas.json`. Os detalhes estão na seção 5 de
+[`docs/experimentos.md`](docs/experimentos.md).
+
+```bash
+# limiares alternativos (definidos na validação) e o efeito de cada um no teste
+.venv/bin/python -m src.pos_teste limiar --data data/accepted_2007_to_2018Q4.csv
+# variante v2: tempo de emprego "não informado" como categoria própria
+.venv/bin/python -m src.training --data data/accepted_2007_to_2018Q4.csv --missing-as-category \
+    --model-path models/modelo_v2_ausente_como_categoria.joblib \
+    --report-dir reports/analises_pos_teste/v2_ausente_como_categoria
+.venv/bin/python -m src.pos_teste comparar   # v1 oficial x v2
+```
+
+As saídas ficam em `reports/analises_pos_teste/`. A aba "Desempenho dos modelos" do app
+também as mostra.
+
 ## LLM local (Ollama)
 
 A explicação usa o modelo `llama3.2:3b` via [Ollama](https://ollama.com/download),
@@ -265,8 +285,11 @@ temporárias. Eles verificam o código e **não** produzem resultados científic
   2018-12 (**filtro de maturidade**). Consequência: validação e teste cobrem 2015 e
   contêm só empréstimos de 36 meses.
 - O modelo é escolhido pela **Average Precision (AP)** na validação. O limiar maximiza
-  **F2** na validação, priorizando recall e aceitando muitos falsos positivos. O teste é
-  usado uma única vez.
+  **F2** na validação, priorizando recall e aceitando muitos falsos positivos: sinaliza
+  cerca de 73% dos empréstimos. O teste é usado uma única vez. A análise de
+  sensibilidade do limiar está na seção 5.1 de `docs/experimentos.md`.
+- `grade` e `int_rate` (nota e juros definidos pelo próprio Lending Club) ficam fora do
+  modelo por decisão de escopo (seção 5.3).
 - A probabilidade é uma estimativa do modelo; a calibração aparece em `reports/` e
   na interface.
 - A importância de atributos é **global** e não explica casos individuais. Não há

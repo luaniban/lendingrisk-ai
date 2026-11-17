@@ -1,0 +1,48 @@
+{
+  "aviso": "Análise feita DEPOIS do uso do teste reservado. É descritiva e não substitui o resultado oficial (reports/metricas.json).",
+  "versoes": {
+    "v1_oficial_moda": "/home/luanibanhez/code/lendingrisk-ai/reports",
+    "v2_ausente_como_categoria": "/home/luanibanhez/code/lendingrisk-ai/reports/analises_pos_teste/v2_ausente_como_categoria"
+  },
+  "comparacao": [
+    {
+      "versao": "v1_oficial_moda",
+      "modelo_escolhido": "XGBoost",
+      "limiar": 0.09,
+      "teste_average_precision": 0.24253,
+      "teste_roc_auc": 0.66232,
+      "teste_brier": 0.12136,
+      "teste_ece": 0.01546,
+      "teste_recall": 0.8805,
+      "teste_precision": 0.17977,
+      "teste_f2": 0.49477,
+      "teste_acuracia": 0.38615,
+      "teste_taxa_positiva_prevista": 0.72676,
+      "emp_length_ausente_linhas": 7692,
+      "emp_length_ausente_taxa_charged_off_real": 0.21659,
+      "emp_length_ausente_score_medio_previsto": 0.16333,
+      "emp_length_ausente_recall": 0.92497,
+      "emp_length_ausente_precision": 0.24154
+    },
+    {
+      "versao": "v2_ausente_como_categoria",
+      "modelo_escolhido": "XGBoost",
+      "limiar": 0.1,
+      "teste_average_precision": 0.24462,
+      "teste_roc_auc": 0.66343,
+      "teste_brier": 0.12125,
+      "teste_ece": 0.01526,
+      "teste_recall": 0.83727,
+      "teste_precision": 0.18737,
+      "teste_f2": 0.49434,
+      "teste_acuracia": 0.43704,
+      "teste_taxa_positiva_prevista": 0.66305,
+      "emp_length_ausente_linhas": 7692,
+      "emp_length_ausente_taxa_charged_off_real": 0.21659,
+      "emp_length_ausente_score_medio_previsto": 0.19093,
+      "emp_length_ausente_recall": 0.94478,
+      "emp_length_ausente_precision": 0.23566
+    }
+  ],
+  "criado_em_utc": "2026-11-17T14:17:42.841021+00:00"
+}

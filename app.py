@@ -495,6 +495,43 @@ with tab_performance:
             with st.expander(title):
                 st.dataframe(styled_pt(pd.read_csv(path)), hide_index=True, width="stretch")
 
+    post_dir = config.REPORT_DIR / "analises_pos_teste"
+    sensitivity_path, variants_path = post_dir / "sensibilidade_limiar.csv", post_dir / "comparacao_v1_v2.csv"
+    if sensitivity_path.is_file() or variants_path.is_file():
+        st.subheader("Análises complementares")
+        st.caption("Feitas depois do uso do teste reservado. São descritivas: não mudam o modelo, o limiar "
+                   "nem as métricas oficiais acima. Detalhes em docs/experimentos.md, seção 5.")
+    if sensitivity_path.is_file():
+        st.markdown("**E se o limiar fosse outro?** Os limiares alternativos foram definidos só com a "
+                    "validação; a tabela mostra o efeito no teste.")
+        sensitivity = pd.read_csv(sensitivity_path).loc[lambda df: df["particao"] == "teste"]
+        st.table(pd.DataFrame({
+            "Critério": sensitivity["criterio"], "Limiar": sensitivity["limiar"].map(percent_pt),
+            "Sinaliza": sensitivity["taxa_sinalizada"].map(percent_pt),
+            "Recall": sensitivity["recall"].map(percent_pt),
+            "Precision": sensitivity["precision"].map(percent_pt),
+            "Acurácia": sensitivity["acuracia"].map(percent_pt),
+        }).set_index("Critério"))
+    if variants_path.is_file():
+        st.markdown("**Versão 2: tempo de emprego \"não informado\" como categoria própria.** Na versão "
+                    "oficial, o campo vazio recebe a resposta mais comum do treino (\"10 anos ou mais\").")
+        variants = pd.read_csv(variants_path).set_index("versao")
+        decimal = lambda v: f"{v:.4f}".replace(".", ",")  # noqa: E731
+        rows = [("Modelo escolhido", "modelo_escolhido", str), ("Limiar", "limiar", percent_pt),
+                ("AP (teste)", "teste_average_precision", decimal), ("ROC-AUC (teste)", "teste_roc_auc", decimal),
+                ("Brier (teste)", "teste_brier", decimal), ("ECE (teste)", "teste_ece", decimal),
+                ("Recall (teste)", "teste_recall", percent_pt), ("Precision (teste)", "teste_precision", percent_pt),
+                ("Sinaliza (teste)", "teste_taxa_positiva_prevista", percent_pt),
+                ("Não informado: Charged Off real", "emp_length_ausente_taxa_charged_off_real", percent_pt),
+                ("Não informado: risco médio previsto", "emp_length_ausente_score_medio_previsto", percent_pt)]
+        labels = {"v1_oficial_moda": "v1 oficial (moda)", "v2_ausente_como_categoria": "v2 (categoria própria)"}
+        st.table(pd.DataFrame({
+            labels.get(version, version): {label: (fmt(variants.at[version, col]) if col in variants
+                                                   and pd.notna(variants.at[version, col]) else "—")
+                                           for label, col, fmt in rows}
+            for version in variants.index
+        }))
+
 # ------------------------------- Dados e metodologia ----------------------------------
 with tab_data:
     dataset = metrics.get("dataset", {})

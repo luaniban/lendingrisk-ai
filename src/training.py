@@ -36,7 +36,7 @@ from xgboost import XGBClassifier
 from src import figures
 from src.config import (
     CATEGORICAL_FEATURES, CLASS_NAMES, DATE_COLUMN, DEFAULT_MAX_ROWS,
-    DEFAULT_SAMPLE_FRACTION, FEATURES, METRICS_PATH, METRICS_SCHEMA_VERSION,
+    DEFAULT_SAMPLE_FRACTION, FEATURES, METRICS_PATH, METRICS_SCHEMA_VERSION, MISSING_CATEGORY,
     MODEL_PATH, NUMERIC_FEATURES, REPORT_DIR, SEED,
 )
 from src.data import describe_partition, load_dataset, sha256_file, temporal_split
@@ -63,7 +63,11 @@ def make_candidates(seed: int = SEED) -> dict:
     }
 
 
-def build_pipeline(model):
+def build_pipeline(model, missing_as_category: bool = False):
+    """missing_as_category=False (oficial): ausentes categóricos recebem a moda do treino.
+    True (variante v2): ausentes viram a categoria própria MISSING_CATEGORY."""
+    categorical_imputer = (SimpleImputer(strategy="constant", fill_value=MISSING_CATEGORY) if missing_as_category
+                           else SimpleImputer(strategy="most_frequent"))
     preprocessing = ColumnTransformer(
         transformers=[
             ("num", Pipeline([
@@ -71,7 +75,7 @@ def build_pipeline(model):
                 ("scaler", StandardScaler()),
             ]), NUMERIC_FEATURES),
             ("cat", Pipeline([
-                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("imputer", categorical_imputer),
                 ("one_hot", OneHotEncoder(handle_unknown="ignore")),
             ]), CATEGORICAL_FEATURES),
         ],
@@ -123,6 +127,7 @@ def train(
     seed: int = SEED,
     verbose: bool = True,
     compute_hash: bool = True,
+    missing_as_category: bool = False,
 ):
     started = time.time()
     data_path = Path(data_path)
@@ -151,7 +156,7 @@ def train(
     for name, classifier in candidates.items():
         _log(f"Treinando {name}...", verbose)
         t0 = time.time()
-        pipeline = build_pipeline(classifier)
+        pipeline = build_pipeline(classifier, missing_as_category)
         pipeline.fit(x_train, y_train)  # pré-processamento ajustado só no treino
         probabilities = pipeline.predict_proba(x_val)[:, 1]
         threshold = choose_threshold(y_val, probabilities)
@@ -264,7 +269,10 @@ def train(
             "selecao_modelo": "maior Average Precision (AP) na validação",
             "limiar": "maior F2 na validação (grade 0,01–0,99, passo 0,01)",
             "teste": "avaliado uma única vez com o modelo e o limiar já escolhidos",
+            "categoricos_ausentes": (f"categoria própria '{MISSING_CATEGORY}'" if missing_as_category
+                                     else "moda do treino"),
         },
+        "variante": {"ausente_como_categoria": missing_as_category},
         "dataset": data_info,
         "linhas": {k: v["linhas"] for k, v in partitions.items()} | {"total": len(data)},
         "particoes": partitions,
@@ -287,18 +295,20 @@ def train(
         "criado_em_utc": datetime.now(timezone.utc).isoformat(),
     }
     metrics_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    _append_history(report_dir, payload, fraction, max_rows, maturity_filter)
+    _append_history(report_dir, payload, fraction, max_rows, maturity_filter, missing_as_category)
     _log(f"Arquivos gerados em: {model_path.parent} e {report_dir} ({payload['duracao_segundos']} s)", verbose)
     return payload
 
 
-def _append_history(report_dir: Path, payload: dict, fraction, max_rows, maturity_filter):
+def _append_history(report_dir: Path, payload: dict, fraction, max_rows, maturity_filter,
+                    missing_as_category: bool = False):
     """Registra cada execução sem sobrescrever as anteriores (rastreabilidade)."""
     row = {
         "criado_em_utc": payload["criado_em_utc"],
         "arquivo": payload["dataset"]["arquivo"],
         "sha256": payload["dataset"].get("sha256", ""),
         "fracao": fraction, "max_linhas": max_rows, "filtro_maturidade": maturity_filter,
+        "ausente_como_categoria": missing_as_category,
         "linhas_total": payload["linhas"]["total"],
         **{f"ap_val_{r['modelo']}": r["average_precision"] for r in payload["comparacao_validacao"]},
         "modelo_escolhido": payload["modelo_escolhido"], "limiar": payload["limiar"],
@@ -325,13 +335,20 @@ def main(argv=None):
     parser.add_argument("--no-maturity-filter", action="store_true",
                         help="Desativa o filtro de maturidade (reproduz o comportamento do starter)")
     parser.add_argument("--no-figures", action="store_true", help="Não gera os PNGs")
+    parser.add_argument("--missing-as-category", action="store_true",
+                        help="Variante: ausentes categóricos viram categoria própria (padrão: moda do treino)")
+    parser.add_argument("--model-path", type=Path, default=MODEL_PATH,
+                        help=f"Onde salvar o modelo (padrão: {MODEL_PATH.relative_to(MODEL_PATH.parents[1])})")
+    parser.add_argument("--report-dir", type=Path, default=REPORT_DIR,
+                        help="Pasta das métricas, tabelas e gráficos (padrão: reports/)")
     args = parser.parse_args(argv)
     if not (0 < args.fraction <= 1):
         parser.error("--fraction deve estar entre 0 e 1")
     if args.max_rows is not None and args.max_rows < 0:
         parser.error("--max-rows deve ser >= 0")
     train(args.data, fraction=args.fraction, max_rows=args.max_rows or None,
-          maturity_filter=not args.no_maturity_filter, make_figures=not args.no_figures)
+          maturity_filter=not args.no_maturity_filter, make_figures=not args.no_figures,
+          model_path=args.model_path, report_dir=args.report_dir, missing_as_category=args.missing_as_category)
 
 
 if __name__ == "__main__":
