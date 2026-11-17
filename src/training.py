@@ -244,7 +244,7 @@ def train(
             ("importancia_atributos.png", figures.plot_importance, (importance_df,),
              f"Importância global por permutação — {best_name}"),
             ("estabilidade_temporal.png", figures.plot_stability, (stability,),
-             f"Estabilidade por trimestre — {best_name}"),
+             f"Estabilidade por mês de emissão — {best_name}"),
             ("calibracao_teste.png", figures.plot_calibration, ({best_name: calibration_test},),
              f"Calibração no teste — {best_name}"),
         ]
@@ -319,16 +319,16 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Treina os modelos LendingRisk AI")
     parser.add_argument("--data", required=True, type=Path, help="Caminho do CSV ou CSV.GZ")
     parser.add_argument("--fraction", default=DEFAULT_SAMPLE_FRACTION, type=float,
-                        help="Fração amostrada uniformemente (por linha) do arquivo")
+                        help="Fração amostrada uniformemente (por linha) do arquivo (padrão 1 = tudo)")
     parser.add_argument("--max-rows", default=DEFAULT_MAX_ROWS, type=int,
-                        help="Máximo de linhas após filtros (0 = sem teto)")
+                        help="Máximo de linhas após filtros (padrão/0 = sem teto)")
     parser.add_argument("--no-maturity-filter", action="store_true",
                         help="Desativa o filtro de maturidade (reproduz o comportamento do starter)")
     parser.add_argument("--no-figures", action="store_true", help="Não gera os PNGs")
     args = parser.parse_args(argv)
     if not (0 < args.fraction <= 1):
         parser.error("--fraction deve estar entre 0 e 1")
-    if args.max_rows < 0:
+    if args.max_rows is not None and args.max_rows < 0:
         parser.error("--max-rows deve ser >= 0")
     train(args.data, fraction=args.fraction, max_rows=args.max_rows or None,
           maturity_filter=not args.no_maturity_filter, make_figures=not args.no_figures)

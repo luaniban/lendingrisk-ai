@@ -75,9 +75,85 @@ reproduz o comportamento original.
 
 ---
 
-## 2. Auditoria do dataset real
+## 2. Auditoria do dataset real (17/11/2026, sem treinar modelos)
 
-*(preenchida após `python -m src.audit` — ver seção abaixo)*
+Comando: `python -m src.audit --data data/accepted_2007_to_2018Q4.csv`. A execução levou
+30 s e usou no máximo 1,26 GB de RAM. Saídas: `reports/auditoria_dataset.json`,
+`reports/auditoria_coortes.csv`, `reports/figures/auditoria_coortes.png` e o log em
+`reports/logs/auditoria_2026-11-17.log`.
+
+### 2.1 Arquivo
+- `accepted_2007_to_2018Q4.csv`: 1.675.133.810 bytes, SHA-256
+  `3eae03c28fd9d2e8a076ebeb73507e8d4d0f44d90500decdb0936e0933d1f36a`.
+- 151 colunas e 2.260.701 linhas lidas. Entre elas estão 2 linhas de rodapé
+  ("Total amount funded in policy code…") e 33 linhas sem status/data, que são descartadas.
+- Emissões (`issue_d`) de 2007-06 a 2018-12. Todas as 10 features existem no arquivo e
+  nenhuma delas está na lista de colunas de vazamento. O arquivo contém 20 colunas
+  pós-concessão (ex.: `total_pymnt`, `recoveries`, `last_fico_range_high`), que **não**
+  são lidas.
+
+### 2.2 Status (`loan_status`)
+| Status | Linhas |
+|---|---:|
+| Fully Paid | 1.076.751 |
+| Current | 878.317 |
+| Charged Off | 268.559 |
+| Late (31-120 days) | 21.467 |
+| In Grace Period | 8.436 |
+| Late (16-30 days) | 4.349 |
+| Does not meet the credit policy. Status:Fully Paid | 1.988 |
+| Does not meet the credit policy. Status:Charged Off | 761 |
+| Default | 40 |
+| vazio (rodapé/linhas inválidas) | 33 |
+
+Com desfecho final há 1.345.310 linhas, das quais **19,96%** são Charged Off. Os 2.749
+casos "Does not meet the credit policy" (quase todos de 2007–2010) seguem outra
+política de crédito e foram excluídos. Por isso as coortes de 2007–2010 aparecem
+com menos de 100% "finalizado" em `auditoria_coortes.csv`.
+
+### 2.3 Evidência do viés de maturidade
+Data de referência: 2018-12-01 (maior `issue_d`).
+
+| Grupo | Empréstimos | % com desfecho final | Charged Off entre finalizados |
+|---|---:|---:|---:|
+| Coortes maturadas (prazo já encerrado) | 676.459 | 99,57% | 14,82% |
+| Coortes não maturadas | 1.584.209 | 42,40% | 25,12% |
+
+Nas coortes recentes, quem já tem desfecho é desproporcionalmente Charged Off,
+porque a baixa precoce aparece antes da quitação no prazo. Exemplo: 60 meses emitidos em
+2015 têm só 67% finalizados, e entre eles 36,4% são Charged Off. Já 36 meses emitidos em
+2015, praticamente todos finalizados, têm 14,9%.
+
+**Efeito na divisão temporal** (todos os finalizados, sem amostragem):
+
+| Política | Treino | Validação | Teste |
+|---|---|---|---|
+| Sem filtro (starter) | 938.537 linhas; 2007-06 a 2016-03; 18,66% CO | 197.556; 2016-04 a 2017-01; **24,89%** CO | 209.217; 2017-02 a 2018-12; 21,17% CO |
+| **Com filtro de maturidade** | 470.714; 2007-06 a 2015-04; 14,81% CO | 95.405; 2015-05 a 2015-08; 14,81% CO | 107.434; 2015-09 a 2015-12; 14,84% CO |
+
+Sem o filtro, a taxa de Charged Off muda de 18,7% no treino para 24,9% na validação.
+Essa mudança vem da seleção de quem terminou cedo, não de uma mudança real no risco.
+Com o filtro, as três partições têm a mesma taxa (~14,8%). **Decisão: manter o
+filtro de maturidade**, como previsto no protocolo.
+
+**Limitações dessa decisão, registradas antes do treino:**
+1. Validação e teste cobrem só 4 meses cada (2015-05 a 2015-08 e 2015-09 a 2015-12).
+   Por isso a estabilidade passa a ser analisada por **mês**, e não por trimestre.
+2. Validação e teste contêm **apenas empréstimos de 36 meses**. Nenhum empréstimo de 60
+   meses emitido depois de 2013-12 tinha prazo encerrado. O modelo aprende o efeito de
+   60 meses com coortes de 2010–2013 (11,7% do treino), mas esse efeito **não é
+   avaliado** no teste. A interface deve deixar isso claro.
+3. A população analisada são empréstimos de 2007–2015 com prazo encerrado. Os resultados
+   não representam as safras de 2016–2018.
+
+### 2.4 Qualidade dos dados (finalizados)
+- Ausentes: `emp_length` 5,84%, `revol_util` 0,064%, `dti` 0,028%; demais 0%.
+- Valores extremos mantidos (o modelo imputa ausentes, mas não corta extremos):
+  `dti` de −1 a 999; `revol_util` até 892,3; `annual_inc` de 0 a 10,99 milhões.
+  Os percentis de 1% e 99% são usados pela interface para avisar quando uma entrada
+  foge da faixa usual.
+- `home_ownership` tem categorias raras: ANY (286), OTHER (144) e NONE (48).
+- `loan_amnt` vai de US$ 500 a US$ 40.000, e `fico_range_low` de 625 a 845.
 
 ---
 

@@ -1,0 +1,96 @@
+{
+  "arquivo": "accepted_2007_to_2018Q4.csv",
+  "sha256": "3eae03c28fd9d2e8a076ebeb73507e8d4d0f44d90500decdb0936e0933d1f36a",
+  "colunas_no_arquivo": 151,
+  "linhas_lidas": 2260701,
+  "periodo_emissao": [
+    "2007-06-01",
+    "2018-12-01"
+  ],
+  "contagem_status": {
+    "Fully Paid": 1076751,
+    "Current": 878317,
+    "Charged Off": 268559,
+    "Late (31-120 days)": 21467,
+    "In Grace Period": 8436,
+    "Late (16-30 days)": 4349,
+    "Does not meet the credit policy. Status:Fully Paid": 1988,
+    "Does not meet the credit policy. Status:Charged Off": 761,
+    "Default": 40,
+    "<vazio>": 33
+  },
+  "finalizados": {
+    "linhas": 1345310,
+    "fully_paid": 1076751,
+    "charged_off": 268559,
+    "taxa_charged_off": 0.19963
+  },
+  "maturidade": {
+    "data_referencia": "2018-12-01",
+    "criterio": "issue_d + prazo <= data de referência (maior issue_d do arquivo)",
+    "coortes_maturadas": {
+      "emprestimos": 676459,
+      "com_desfecho_final": 673553,
+      "pct_com_desfecho_final": 0.9957,
+      "taxa_charged_off_entre_finalizados": 0.14815
+    },
+    "coortes_nao_maturadas": {
+      "emprestimos": 1584209,
+      "com_desfecho_final": 671757,
+      "pct_com_desfecho_final": 0.42403,
+      "taxa_charged_off_entre_finalizados": 0.25124
+    }
+  },
+  "particoes_por_politica": {
+    "sem_filtro_maturidade (starter)": {
+      "linhas": 1345310,
+      "taxa_charged_off": 0.19963,
+      "treino": {
+        "linhas": 938537,
+        "inicio": "2007-06-01",
+        "fim": "2016-03-01",
+        "taxa_charged_off": 0.18656,
+        "proporcao_60_meses": 0.24524
+      },
+      "validacao": {
+        "linhas": 197556,
+        "inicio": "2016-04-01",
+        "fim": "2017-01-01",
+        "taxa_charged_off": 0.2489,
+        "proporcao_60_meses": 0.21294
+      },
+      "teste": {
+        "linhas": 209217,
+        "inicio": "2017-02-01",
+        "fim": "2018-12-01",
+        "taxa_charged_off": 0.21172,
+        "proporcao_60_meses": 0.25012
+      }
+    },
+    "com_filtro_maturidade": {
+      "linhas": 673553,
+      "taxa_charged_off": 0.14815,
+      "treino": {
+        "linhas": 470714,
+        "inicio": "2007-06-01",
+        "fim": "2015-04-01",
+        "taxa_charged_off": 0.1481,
+        "proporcao_60_meses": 0.11678
+      },
+      "validacao": {
+        "linhas": 95405,
+        "inicio": "2015-05-01",
+        "fim": "2015-08-01",
+        "taxa_charged_off": 0.14811,
+        "proporcao_60_meses": 0.0
+      },
+      "teste": {
+        "linhas": 107434,
+        "inicio": "2015-09-01",
+        "fim": "2015-12-01",
+        "taxa_charged_off": 0.14838,
+        "proporcao_60_meses": 0.0
+      }
+    }
+  }
+}

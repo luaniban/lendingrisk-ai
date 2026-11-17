@@ -129,7 +129,7 @@ def metrics_by_group(frame: pd.DataFrame, group_col: str, threshold: float,
 
 
 def metrics_by_period(frame: pd.DataFrame, date_col: str, threshold: float,
-                      y_col: str = "target", p_col: str = "score", freq: str = "Q") -> pd.DataFrame:
+                      y_col: str = "target", p_col: str = "score", freq: str = "M") -> pd.DataFrame:
     periods = frame[date_col].dt.to_period(freq).astype(str)
     rows = []
     for period, group in frame.groupby(periods):

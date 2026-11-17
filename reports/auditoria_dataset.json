@@ -1,0 +1,254 @@
+{
+  "arquivo": "accepted_2007_to_2018Q4.csv",
+  "tamanho_bytes": 1675133810,
+  "sha256": "3eae03c28fd9d2e8a076ebeb73507e8d4d0f44d90500decdb0936e0933d1f36a",
+  "colunas_no_arquivo": 151,
+  "colunas_usadas": [
+    "loan_amnt",
+    "annual_inc",
+    "dti",
+    "fico_range_low",
+    "inq_last_6mths",
+    "revol_util",
+    "term",
+    "purpose",
+    "home_ownership",
+    "emp_length",
+    "loan_status",
+    "issue_d"
+  ],
+  "colunas_de_vazamento_presentes_no_arquivo": [
+    "collection_recovery_fee",
+    "debt_settlement_flag",
+    "hardship_flag",
+    "last_credit_pull_d",
+    "last_fico_range_high",
+    "last_fico_range_low",
+    "last_pymnt_amnt",
+    "last_pymnt_d",
+    "loan_status",
+    "next_pymnt_d",
+    "out_prncp",
+    "out_prncp_inv",
+    "pymnt_plan",
+    "recoveries",
+    "settlement_status",
+    "total_pymnt",
+    "total_pymnt_inv",
+    "total_rec_int",
+    "total_rec_late_fee",
+    "total_rec_prncp"
+  ],
+  "features_com_vazamento": [],
+  "linhas_lidas": 2260701,
+  "datas_invalidas_ou_ausentes": 33,
+  "periodo_emissao": [
+    "2007-06-01",
+    "2018-12-01"
+  ],
+  "contagem_status": {
+    "Fully Paid": 1076751,
+    "Current": 878317,
+    "Charged Off": 268559,
+    "Late (31-120 days)": 21467,
+    "In Grace Period": 8436,
+    "Late (16-30 days)": 4349,
+    "Does not meet the credit policy. Status:Fully Paid": 1988,
+    "Does not meet the credit policy. Status:Charged Off": 761,
+    "Default": 40,
+    "<vazio>": 33
+  },
+  "finalizados": {
+    "linhas": 1345310,
+    "fully_paid": 1076751,
+    "charged_off": 268559,
+    "taxa_charged_off": 0.19963
+  },
+  "ausentes_entre_finalizados": {
+    "loan_amnt": 0.0,
+    "annual_inc": 0.0,
+    "dti": 0.00028,
+    "fico_range_low": 0.0,
+    "inq_last_6mths": 0.0,
+    "revol_util": 0.00064,
+    "term": 0.0,
+    "purpose": 0.0,
+    "home_ownership": 0.0,
+    "emp_length": 0.05836
+  },
+  "resumo_numerico_finalizados": {
+    "loan_amnt": {
+      "min": 500.0,
+      "p01": 1500.0,
+      "p25": 8000.0,
+      "mediana": 12000.0,
+      "p75": 20000.0,
+      "p99": 35000.0,
+      "max": 40000.0,
+      "media": 14419.972
+    },
+    "annual_inc": {
+      "min": 0.0,
+      "p01": 18000.0,
+      "p25": 45780.0,
+      "mediana": 65000.0,
+      "p75": 90000.0,
+      "p99": 250000.0,
+      "max": 10999200.0,
+      "media": 76247.6364
+    },
+    "dti": {
+      "min": -1.0,
+      "p01": 1.78,
+      "p25": 11.79,
+      "mediana": 17.61,
+      "p75": 24.06,
+      "p99": 38.47,
+      "max": 999.0,
+      "media": 18.2827
+    },
+    "fico_range_low": {
+      "min": 625.0,
+      "p01": 660.0,
+      "p25": 670.0,
+      "mediana": 690.0,
+      "p75": 710.0,
+      "p99": 800.0,
+      "max": 845.0,
+      "media": 696.185
+    },
+    "inq_last_6mths": {
+      "min": 0.0,
+      "p01": 0.0,
+      "p25": 0.0,
+      "mediana": 0.0,
+      "p75": 1.0,
+      "p99": 4.0,
+      "max": 8.0,
+      "media": 0.6551
+    },
+    "revol_util": {
+      "min": 0.0,
+      "p01": 1.1,
+      "p25": 33.4,
+      "mediana": 52.2,
+      "p75": 70.7,
+      "p99": 98.2,
+      "max": 892.3,
+      "media": 51.81
+    }
+  },
+  "categorias_finalizados": {
+    "term": {
+      "36 months": 1020743,
+      "60 months": 324567
+    },
+    "purpose": {
+      "debt_consolidation": 780321,
+      "credit_card": 295279,
+      "home_improvement": 87504,
+      "other": 77875,
+      "major_purchase": 29425,
+      "medical": 15554,
+      "small_business": 15416,
+      "car": 14585,
+      "moving": 9480,
+      "vacation": 9065,
+      "house": 7253,
+      "wedding": 2294,
+      "renewable_energy": 933,
+      "educational": 326
+    },
+    "home_ownership": {
+      "MORTGAGE": 665579,
+      "RENT": 534421,
+      "OWN": 144832,
+      "ANY": 286,
+      "OTHER": 144,
+      "NONE": 48
+    },
+    "emp_length": {
+      "10+ years": 442199,
+      "2 years": 121743,
+      "< 1 year": 108061,
+      "3 years": 107597,
+      "1 year": 88494,
+      "5 years": 84154,
+      "4 years": 80556,
+      "nan": 78511,
+      "6 years": 62733,
+      "8 years": 60701,
+      "7 years": 59624,
+      "9 years": 50937
+    }
+  },
+  "maturidade": {
+    "data_referencia": "2018-12-01",
+    "criterio": "issue_d + prazo <= data de referência (maior issue_d do arquivo)",
+    "coortes_maturadas": {
+      "emprestimos": 676459,
+      "com_desfecho_final": 673553,
+      "pct_com_desfecho_final": 0.9957,
+      "taxa_charged_off_entre_finalizados": 0.14815
+    },
+    "coortes_nao_maturadas": {
+      "emprestimos": 1584209,
+      "com_desfecho_final": 671757,
+      "pct_com_desfecho_final": 0.42403,
+      "taxa_charged_off_entre_finalizados": 0.25124
+    }
+  },
+  "particoes_por_politica": {
+    "sem_filtro_maturidade (starter)": {
+      "linhas": 1345310,
+      "taxa_charged_off": 0.19963,
+      "treino": {
+        "linhas": 938537,
+        "inicio": "2007-06-01",
+        "fim": "2016-03-01",
+        "taxa_charged_off": 0.18656,
+        "proporcao_60_meses": 0.24524
+      },
+      "validacao": {
+        "linhas": 197556,
+        "inicio": "2016-04-01",
+        "fim": "2017-01-01",
+        "taxa_charged_off": 0.2489,
+        "proporcao_60_meses": 0.21294
+      },
+      "teste": {
+        "linhas": 209217,
+        "inicio": "2017-02-01",
+        "fim": "2018-12-01",
+        "taxa_charged_off": 0.21172,
+        "proporcao_60_meses": 0.25012
+      }
+    },
+    "com_filtro_maturidade": {
+      "linhas": 673553,
+      "taxa_charged_off": 0.14815,
+      "treino": {
+        "linhas": 470714,
+        "inicio": "2007-06-01",
+        "fim": "2015-04-01",
+        "taxa_charged_off": 0.1481,
+        "proporcao_60_meses": 0.11678
+      },
+      "validacao": {
+        "linhas": 95405,
+        "inicio": "2015-05-01",
+        "fim": "2015-08-01",
+        "taxa_charged_off": 0.14811,
+        "proporcao_60_meses": 0.0
+      },
+      "teste": {
+        "linhas": 107434,
+        "inicio": "2015-09-01",
+        "fim": "2015-12-01",
+        "taxa_charged_off": 0.14838,
+        "proporcao_60_meses": 0.0
+      }
+    }
+  },
+  "criado_em_utc": "2026-11-17T12:33:34.945110+00:00"
+}

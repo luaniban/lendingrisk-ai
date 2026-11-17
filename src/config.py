@@ -19,9 +19,10 @@ SEED = 42
 # Versão do formato de reports/metricas.json lido pela interface.
 METRICS_SCHEMA_VERSION = 2
 
-# Amostragem padrão do treinamento (fração uniforme por linha + teto de linhas).
-DEFAULT_SAMPLE_FRACTION = 0.15
-DEFAULT_MAX_ROWS = 150_000
+# Amostragem padrão = configuração OFICIAL do experimento: toda a população elegível.
+# Em máquinas modestas: --fraction 0.15 --max-rows 150000 (configuração do starter).
+DEFAULT_SAMPLE_FRACTION = 1.0
+DEFAULT_MAX_ROWS = None
 
 # Apenas informações conhecidas no início do empréstimo.
 NUMERIC_FEATURES = [

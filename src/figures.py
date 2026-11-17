@@ -170,7 +170,7 @@ def plot_stability(table: pd.DataFrame, path: Path, title: str):
     """table: colunas periodo, particao, average_precision, taxa_charged_off (modelo final)."""
     fig, axes = plt.subplots(2, 1, figsize=(8, 5.6), sharex=True)
     x = np.arange(len(table))
-    for ax, col, label in [(axes[0], "average_precision", "AP por trimestre"),
+    for ax, col, label in [(axes[0], "average_precision", "AP por mês"),
                            (axes[1], "taxa_charged_off", "Taxa real de Charged Off")]:
         for i, (part, group) in enumerate(table.groupby("particao", sort=False)):
             idx = x[table["particao"].to_numpy() == part]
@@ -189,9 +189,9 @@ def plot_cohorts(cohorts: pd.DataFrame, path: Path, title: str):
     for i, (term, group) in enumerate(cohorts.groupby("prazo")):
         group = group.sort_values("ano")
         axes[0].plot(group["ano"], group["pct_finalizado"] * 100, marker="o", color=SLOTS[i],
-                     label=f"{term}", markeredgecolor=SURFACE, markeredgewidth=1.5)
+                     label=term.replace("months", "meses"), markeredgecolor=SURFACE, markeredgewidth=1.5)
         axes[1].plot(group["ano"], group["taxa_charged_off_finalizados"] * 100, marker="o", color=SLOTS[i],
-                     label=f"{term}", markeredgecolor=SURFACE, markeredgewidth=1.5)
+                     label=term.replace("months", "meses"), markeredgecolor=SURFACE, markeredgewidth=1.5)
     axes[0].set(ylabel="% com desfecho final", ylim=(0, 105), xlabel="Ano de emissão")
     axes[0].set_title("Empréstimos já finalizados")
     axes[1].set(ylabel="% Charged Off entre finalizados", xlabel="Ano de emissão")

@@ -57,7 +57,7 @@ FIGURE_CAPTIONS = {
     "figures/matriz_confusao_teste.png": "Matriz de confusão no teste reservado (avaliado uma única vez).",
     "figures/distribuicao_scores_teste.png": "Distribuição das probabilidades no teste, separada pela classe real.",
     "figures/importancia_atributos.png": "Importância GLOBAL por permutação (validação) — não explica casos individuais.",
-    "figures/estabilidade_temporal.png": "AP e taxa real de Charged Off por trimestre (validação e teste).",
+    "figures/estabilidade_temporal.png": "AP e taxa real de Charged Off por mês de emissão (validação e teste).",
     "figures/calibracao_teste.png": "Calibração do modelo escolhido no teste.",
 }
 
@@ -296,7 +296,7 @@ with tab_performance:
         for i, figure in enumerate(figures_list):
             with (left if i % 2 == 0 else right):
                 show_figure(figure)
-    for name, title in [("estabilidade_temporal.csv", "Tabela: estabilidade por trimestre"),
+    for name, title in [("estabilidade_temporal.csv", "Tabela: estabilidade por mês de emissão"),
                         ("analise_subgrupos_teste.csv", "Tabela: análise por subgrupos no teste"),
                         ("importancia_atributos.csv", "Tabela: importância global por permutação")]:
         path = config.REPORT_DIR / name
