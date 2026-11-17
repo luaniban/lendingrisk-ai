@@ -51,6 +51,9 @@ FIELD_HELP = {
 STEPS = {"loan_amnt": 500.0, "annual_inc": 1000.0, "dti": 0.5, "fico_range_low": 5,
          "inq_last_6mths": 1, "revol_util": 1.0}
 INTEGER_FIELDS = {"fico_range_low", "inq_last_6mths"}
+FORMATS = {"loan_amnt": "%.0f", "annual_inc": "%.0f", "dti": "%.2f", "revol_util": "%.1f"}
+FORM_ROWS = [("loan_amnt", "term"), ("annual_inc", "dti"), ("fico_range_low", "inq_last_6mths"),
+             ("revol_util", "purpose"), ("home_ownership", "emp_length")]
 FIGURE_CAPTIONS = {
     "figures/curvas_pr_validacao.png": "Curvas precisão × recall dos três modelos na validação (critério de seleção: AP).",
     "figures/curvas_roc_validacao.png": "Curvas ROC dos três modelos na validação.",
@@ -90,6 +93,18 @@ def int_pt(value) -> str:
     return f"{value:,}".replace(",", ".") if isinstance(value, int) else "?"
 
 
+def styled_pt(frame: pd.DataFrame, precision: int = 4, formats: dict | None = None):
+    """Exibe números em pt-BR (vírgula decimal, ponto de milhar) sem perder a ordenação numérica."""
+    style = frame.style.format(precision=precision, decimal=",", thousands=".", na_rep="—")
+    if formats:
+        formats = {col: fmt for col, fmt in formats.items() if col in frame.columns}
+        style = style.format(formats, subset=list(formats), decimal=",", thousands=".", na_rep="—")
+    return style
+
+
+PARTITION_LABELS = {"treino": "Treino", "validacao": "Validação", "teste": "Teste"}
+
+
 def metric_table(values: dict, references: dict | None = None) -> pd.DataFrame:
     rows = []
     for key, (label, meaning) in METRIC_INFO.items():
@@ -107,6 +122,30 @@ def show_figure(path_in_reports: str):
     path = config.REPORT_DIR / path_in_reports
     if path.is_file():
         st.image(str(path), caption=FIGURE_CAPTIONS.get(path_in_reports, ""), width="stretch")
+
+
+def numeric_widget(col: str):
+    stats = schema.get("numericos", {}).get(col, {})
+    is_int = col in INTEGER_FIELDS
+    lower = 300 if col == "fico_range_low" else 0
+    upper = 850 if col == "fico_range_low" else max(stats.get("max", 1_000_000), stats.get("mediana", 0) * 2, 1)
+    default = stats.get("mediana", lower)
+    cast = int if is_int else float
+    return st.number_input(
+        FEATURE_LABELS[col], min_value=cast(lower), max_value=cast(math.ceil(upper)),
+        value=cast(round(default)) if is_int else float(default), step=cast(STEPS[col]),
+        format=FORMATS.get(col), help=FIELD_HELP[col], key=f"in_{col}",
+    )
+
+
+def category_widget(col: str):
+    options = list(schema.get("categoricos", {}).get(col, [])) or list(config.CATEGORY_LABELS.get(col, {}))
+    if schema.get("ausentes_categoricos", {}).get(col, 0) > 0:
+        options.append(MISSING_LABEL)
+    return st.selectbox(
+        FEATURE_LABELS[col], options, index=0, help=FIELD_HELP[col], key=f"in_{col}",
+        format_func=lambda v: MISSING_LABEL if v == MISSING_LABEL else category_label(col, v),
+    )
 
 
 # --------------------------------------------------------------------------------------
@@ -160,34 +199,11 @@ with tab_simulate:
                 "probabilidade de o empréstimo terminar como **Charged Off** (baixado como perda), "
                 "segundo o padrão histórico do Lending Club.")
     with st.form("loan_form"):
-        col_a, col_b = st.columns(2)
         values = {}
-        for i, col in enumerate(NUMERIC_FEATURES):
-            stats = schema.get("numericos", {}).get(col, {})
-            target = col_a if i % 2 == 0 else col_b
-            is_int = col in INTEGER_FIELDS
-            lower = 0 if col != "fico_range_low" else 300
-            upper = max(stats.get("max", 1_000_000), stats.get("mediana", 0) * 2, 1)
-            if col == "fico_range_low":
-                upper = 850
-            default = stats.get("mediana", lower)
-            cast = int if is_int else float
-            values[col] = target.number_input(
-                FEATURE_LABELS[col], min_value=cast(lower), max_value=cast(math.ceil(upper)),
-                value=cast(round(default)) if is_int else float(default), step=cast(STEPS[col]),
-                help=FIELD_HELP[col], key=f"in_{col}",
-            )
-        for i, col in enumerate(CATEGORICAL_FEATURES):
-            options = list(schema.get("categoricos", {}).get(col, []))
-            if not options:
-                options = list(config.CATEGORY_LABELS.get(col, {}))
-            if schema.get("ausentes_categoricos", {}).get(col, 0) > 0:
-                options.append(MISSING_LABEL)
-            target = col_a if i % 2 == 0 else col_b
-            values[col] = target.selectbox(
-                FEATURE_LABELS[col], options, index=0, help=FIELD_HELP[col], key=f"in_{col}",
-                format_func=lambda v, c=col: MISSING_LABEL if v == MISSING_LABEL else category_label(c, v),
-            )
+        for pair in FORM_ROWS:  # uma linha por par: no celular, a ordem lógica é mantida
+            for target, col in zip(st.columns(2), pair):
+                with target:
+                    values[col] = numeric_widget(col) if col in NUMERIC_FEATURES else category_widget(col)
         submitted = st.form_submit_button("Estimar risco", type="primary")
 
     if submitted:
@@ -273,7 +289,8 @@ with tab_simulate:
             else:
                 st.info(explanation["text"])
                 attempts = explanation.get("attempts", 1)
-                st.caption(f"{CLOSING_SENTENCE} Texto gerado em {explanation['seconds']} s"
+                seconds = f"{explanation['seconds']:.1f}".replace(".", ",")
+                st.caption(f"{CLOSING_SENTENCE} Texto gerado em {seconds} s"
                            + (f" ({attempts} tentativas: a primeira falhou na verificação automática)." if attempts > 1 else "."))
                 if explanation["warnings"]:
                     st.warning("A verificação automática encontrou possíveis inconsistências no texto da LLM "
@@ -286,18 +303,20 @@ with tab_performance:
                 f"validação. Limiar: **{percent_pt(threshold)}** (máximo F2 na validação). "
                 "O conjunto de teste foi usado uma única vez, depois dessas escolhas.")
     st.subheader("Métricas no teste reservado")
-    st.dataframe(metric_table(test_metrics, metrics.get("referencias_teste")), hide_index=True, width="stretch")
+    st.dataframe(styled_pt(metric_table(test_metrics, metrics.get("referencias_teste"))), hide_index=True,
+                 width="stretch")
     matrix = metrics.get("matriz_confusao_teste")
     if matrix:
         st.markdown("**Matriz de confusão (teste)**")
         st.table(pd.DataFrame(matrix, index=["Real: Fully Paid", "Real: Charged Off"],
-                              columns=["Previsto: Fully Paid", "Previsto: Charged Off"]))
+                              columns=["Previsto: Fully Paid", "Previsto: Charged Off"]).map(int_pt))
 
     st.subheader("Comparação dos três modelos na validação")
     comparison = pd.DataFrame(metrics["comparacao_validacao"])
     rename = {"modelo": "Modelo", "limiar": "Limiar (F2)", "tempo_treino_s": "Treino (s)",
               **{k: v[0] for k, v in METRIC_INFO.items()}}
-    st.dataframe(comparison.rename(columns=rename), hide_index=True, width="stretch")
+    st.dataframe(styled_pt(comparison.rename(columns=rename), formats={"Limiar (F2)": "{:.2f}", "Treino (s)": "{:.1f}"}),
+                 hide_index=True, width="stretch")
 
     figures_list = metrics.get("figuras", [])
     if figures_list:
@@ -312,7 +331,7 @@ with tab_performance:
         path = config.REPORT_DIR / name
         if path.is_file():
             with st.expander(title):
-                st.dataframe(pd.read_csv(path), hide_index=True, width="stretch")
+                st.dataframe(styled_pt(pd.read_csv(path)), hide_index=True, width="stretch")
 
 # ------------------------------- Dados e metodologia ----------------------------------
 with tab_data:
@@ -336,13 +355,21 @@ with tab_data:
                     "sorteadas removidas). Isso evita que o período recente contenha apenas quem terminou cedo.")
     sampling = dataset.get("amostragem", {})
     if sampling:
-        st.markdown(f"- **Amostragem:** {sampling.get('metodo')}, fração {sampling.get('fracao')}, "
-                    f"teto {sampling.get('max_linhas')} linhas, semente {sampling.get('semente')}.")
+        fraction, cap = sampling.get("fracao"), sampling.get("max_linhas")
+        fraction_text = ("100% (todas as linhas elegíveis)" if fraction == 1
+                         else percent_pt(fraction) if isinstance(fraction, (int, float)) else "?")
+        cap_text = f"teto de {int_pt(cap)} linhas" if cap else "sem teto de linhas"
+        st.markdown(f"- **Amostragem:** sorteio uniforme por linha (Bernoulli), fração {fraction_text}, "
+                    f"{cap_text}, semente {sampling.get('semente')}.")
     if partitions:
         st.markdown("**Divisão temporal por data de emissão (`issue_d`)**")
-        st.table(pd.DataFrame(partitions).T.rename(columns={
-            "linhas": "Linhas", "inicio": "Início", "fim": "Fim", "taxa_charged_off": "Taxa de Charged Off",
-            "proporcao_60_meses": "Proporção 60 meses"}))
+        st.table(pd.DataFrame([
+            {"Partição": PARTITION_LABELS.get(name, name), "Linhas": int_pt(part.get("linhas")),
+             "Início": part.get("inicio"), "Fim": part.get("fim"),
+             "Taxa de Charged Off": percent_pt(part["taxa_charged_off"]),
+             "Proporção 60 meses": percent_pt(part["proporcao_60_meses"])}
+            for name, part in partitions.items()
+        ]).set_index("Partição"))
     audit_figure = config.REPORT_DIR / "figures" / "auditoria_coortes.png"
     if audit_figure.is_file():
         st.image(str(audit_figure), caption="Auditoria do arquivo completo: proporção de empréstimos finalizados "

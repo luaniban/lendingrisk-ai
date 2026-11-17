@@ -35,7 +35,7 @@ flowchart LR
   são usadas.
 - **A LLM não calcula nada.** Ela recebe a probabilidade, o limiar e a classe vindos do
   classificador e só redige a explicação. Uma verificação automática aponta números
-  inventados ou classe trocada.
+  inventados, classe trocada, texto cortado e atribuição causal.
 
 ## Resultados
 
@@ -211,8 +211,24 @@ rode `ollama pull llama3.2:3b` no PowerShell.
 
 Para conferir: `ollama list` deve mostrar `llama3.2:3b`. A barra lateral do app também
 mostra o status. Se o serviço já estiver ativo, **não** abra uma segunda instância
-com `ollama serve`. Sem GPU dedicada o modelo roda na CPU, e cada explicação leva de
-dezenas de segundos a cerca de 1 minuto.
+com `ollama serve`. Sem GPU dedicada o modelo roda na CPU. Na máquina de
+desenvolvimento, cada explicação levou de 15 a 21 s; a primeira chamada leva mais,
+porque carrega o modelo.
+
+**Como a explicação é gerada** (`src/llm.py`): o Ollama devolve um JSON com 3 frases
+(probabilidade, comparação com o limiar e importância global), e o código monta o
+parágrafo. A verificação automática confere os números e a classe. Se encontrar erro
+factual, gera uma segunda resposta e fica com a que tiver menos avisos. Os avisos
+restantes aparecem na tela.
+
+Para gerar a demonstração documentada com 4 perfis **hipotéticos**:
+
+```bash
+.venv/bin/python -m src.llm_demo   # grava reports/llm_demonstracao.{json,md}
+```
+
+A evolução do prompt (v1 → v5) e as limitações estão na seção 4 de
+[`docs/experimentos.md`](docs/experimentos.md).
 
 Variáveis opcionais: `LENDINGRISK_OLLAMA_URL` (padrão `http://127.0.0.1:11434`) e
 `LENDINGRISK_LLM_MODEL` (padrão `llama3.2:3b`).
