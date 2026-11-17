@@ -1,13 +1,25 @@
+# Ambiente Python
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.coverage
+.ipynb_checkpoints/
+
+# Segredos e configurações locais
 .env
+.streamlit/secrets.toml
 .DS_Store
 .idea/
 .vscode/
+
+# Dados brutos (baixar pela fonte documentada no README; nunca versionar)
 data/*
 !data/.gitkeep
+
+# Modelos treinados localmente (joblib grande e executável — não distribuir)
 models/*.joblib
+
+# Relatórios pequenos (CSV/JSON/PNG) SÃO versionados para auditoria
 reports/*.tmp
