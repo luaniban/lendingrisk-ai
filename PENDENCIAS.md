@@ -16,12 +16,8 @@ Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git
 
 ## Publicação e reprodutibilidade
 
-- [ ] **Decidir a visibilidade do repositório.** Ele foi publicado como **privado** em
-  https://github.com/luaniban/lendingrisk-ai. Antes de torná-lo público, considere que o README
-  e o `INSTRUCOES_…md` têm os prontuários da dupla (inclusive o do Hyan), que os commits levam o
-  e-mail do Luan e que os arquivos de instrução para agentes de IA (`CLAUDE.md`, `AGENTS.md`)
-  estão versionados.
-- [ ] **Adicionar o Hyan como colaborador.** Falta saber o usuário dele no GitHub.
+- [ ] **Adicionar o Hyan como colaborador** do repositório público
+  https://github.com/luaniban/lendingrisk-ai. Falta saber o usuário dele no GitHub.
 - [ ] **Testar a instalação em outra máquina**, de preferência no Windows do Hyan. As
   instruções do README para Windows não foram testadas.
 
@@ -33,5 +29,3 @@ Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git
 - [ ] **Bootstrap pareado entre a v1 e a v2.** A v2 melhorou um pouco a AP no teste
   (+0,002), sem teste de significância (seção 5.2). Um bootstrap diria se a diferença é
   robusta.
-- [ ] Gerar de novo os gráficos com o fundo da cor do tema (hoje são um pouco mais claros que a
-  página). Exige rodar o treino (~3 min) ou criar um comando que só refaça as figuras.

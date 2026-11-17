@@ -35,7 +35,11 @@
   "criterios": {
     "selecao_modelo": "maior Average Precision (AP) na validação",
     "limiar": "maior F2 na validação (grade 0,01–0,99, passo 0,01)",
-    "teste": "avaliado uma única vez com o modelo e o limiar já escolhidos"
+    "teste": "avaliado uma única vez com o modelo e o limiar já escolhidos",
+    "categoricos_ausentes": "moda do treino"
+  },
+  "variante": {
+    "ausente_como_categoria": false
   },
   "dataset": {
     "arquivo": "accepted_2007_to_2018Q4.csv",
@@ -136,7 +140,7 @@
       "taxa_positiva_real": 0.14811,
       "taxa_positiva_prevista": 0.70753,
       "ece": 0.01285,
-      "tempo_treino_s": 3.9
+      "tempo_treino_s": 3.6
     },
     {
       "modelo": "Random Forest",
@@ -153,7 +157,7 @@
       "taxa_positiva_real": 0.14811,
       "taxa_positiva_prevista": 0.724,
       "ece": 0.01575,
-      "tempo_treino_s": 118.8
+      "tempo_treino_s": 108.3
     },
     {
       "modelo": "XGBoost",
@@ -170,7 +174,7 @@
       "taxa_positiva_real": 0.14811,
       "taxa_positiva_prevista": 0.73791,
       "ece": 0.01246,
-      "tempo_treino_s": 5.9
+      "tempo_treino_s": 5.4
     }
   ],
   "metricas_teste": {
@@ -462,6 +466,6 @@
     "xgboost": "3.4.1",
     "joblib": "1.6.0"
   },
-  "duracao_segundos": 163.2,
-  "criado_em_utc": "2026-11-17T12:40:41.765608+00:00"
+  "duracao_segundos": 149.0,
+  "criado_em_utc": "2026-11-17T14:26:40.980368+00:00"
 }

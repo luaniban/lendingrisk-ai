@@ -18,12 +18,13 @@ from sklearn.metrics import precision_recall_curve, roc_curve  # noqa: E402
 
 from src.config import FEATURE_LABELS  # noqa: E402
 
-SURFACE = "#fcfcfb"
-INK = "#0b0b0b"
-INK_2 = "#52514e"
-MUTED = "#898781"
-GRID = "#e1e0d9"
-AXIS = "#c3c2b7"
+# Mesmos tokens do tema da interface (.streamlit/config.toml): papel, tinta e grafite.
+SURFACE = "#f7f5f0"   # papel (fundo do app)
+INK = "#23262b"       # tinta
+INK_2 = "#66645e"     # grafite
+MUTED = "#8b887f"
+GRID = "#e3ded3"
+AXIS = "#cfc8b9"
 SLOTS = ["#2a78d6", "#eb6834", "#1baf7a"]
 MODEL_COLORS = {"Regressão Logística": SLOTS[0], "Random Forest": SLOTS[1], "XGBoost": SLOTS[2]}
 SEQUENTIAL_BLUE = ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]

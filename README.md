@@ -37,6 +37,10 @@ flowchart LR
   classificador e só redige a explicação. Uma verificação automática aponta números
   inventados, classe trocada, texto cortado e atribuição causal.
 
+> **Para estudar o sistema:** o [guia de estudo](docs/guia_de_estudo.md) explica cada parte,
+> do dataset à LLM, com os conceitos técnicos, os números reais e as perguntas prováveis
+> da banca.
+
 ## Resultados
 
 Os resultados obtidos com o dataset real, e as decisões que levaram a eles, estão em
@@ -88,7 +92,7 @@ lendingrisk-ai/
 ├── data/                   # dataset local (não versionado)
 ├── models/                 # modelo treinado local (não versionado)
 ├── reports/                # métricas, tabelas, gráficos e logs (versionados)
-├── docs/                   # registro de experimentos e roteiros de artigo/pitch
+├── docs/                   # guia de estudo, registro de experimentos e roteiros de artigo/pitch
 ├── requirements.txt        # faixas de versões compatíveis
 └── requirements-lock.txt   # versões exatas testadas
 ```

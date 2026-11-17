@@ -157,7 +157,7 @@
       "taxa_positiva_real": 0.14811,
       "taxa_positiva_prevista": 0.72543,
       "ece": 0.01609,
-      "tempo_treino_s": 104.3
+      "tempo_treino_s": 160.6
     },
     {
       "modelo": "XGBoost",
@@ -174,7 +174,7 @@
       "taxa_positiva_real": 0.14811,
       "taxa_positiva_prevista": 0.67302,
       "ece": 0.01257,
-      "tempo_treino_s": 4.9
+      "tempo_treino_s": 5.7
     }
   ],
   "metricas_teste": {
@@ -466,6 +466,6 @@
     "xgboost": "3.4.1",
     "joblib": "1.6.0"
   },
-  "duracao_segundos": 147.1,
-  "criado_em_utc": "2026-11-17T14:17:01.730723+00:00"
+  "duracao_segundos": 209.3,
+  "criado_em_utc": "2026-11-17T14:30:12.452262+00:00"
 }

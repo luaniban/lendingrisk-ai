@@ -166,9 +166,14 @@ num notebook com Intel Tiger Lake (8 threads) e 15 GiB de RAM, sem GPU.
 A execução levou **2 min 28 s** e usou no máximo **1,17 GB** de RAM (a segunda execução: 2 min 45 s e 1,18 GB). Logs em
 `reports/logs/treino_oficial_2026-11-17*.log`.
 
-**Reprodutibilidade:** o treino foi executado duas vezes com o mesmo comando. A segunda
-execução só refez os gráficos, com ajustes de formatação. As métricas das duas são
-idênticas (ver `reports/historico_execucoes.csv`).
+**Reprodutibilidade:** o treino foi executado três vezes com o mesmo comando. A segunda e
+a terceira execuções só refizeram os gráficos: primeiro com ajustes de formatação, depois
+com o fundo e as cores do tema da interface. As métricas das três são idênticas (ver
+`reports/historico_execucoes.csv`). Na terceira, a conferência automática comparou
+`metricas.json`, `auditoria_dataset.json` e os arquivos da variante v2 com a versão
+anterior. Mudaram só os tempos de treino, os metadados novos `variante` e
+`criterios.categoricos_ausentes` e a 17ª casa decimal de alguns valores de calibração do
+Random Forest (ordem das somas no processamento paralelo).
 
 ### 3.1 Dados usados
 | Etapa | Linhas |
