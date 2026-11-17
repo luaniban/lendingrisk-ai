@@ -268,3 +268,50 @@ Fonte: `reports/analise_subgrupos_teste.csv`.
 4. Faltam testes de justiça com métricas formais. A análise de subgrupos é só descritiva.
 5. Para uma próxima versão: tratar ausentes como categoria, avaliar `grade`/`int_rate`
    com aprovação da dupla e recalibrar com dados separados.
+
+---
+
+## 4. Integração e teste da LLM local (17/11/2026)
+
+**Ambiente:** Ollama 0.40.16, instalado sem sudo como serviço do usuário e escutando
+só em 127.0.0.1. Modelo `llama3.2:3b`: digest `a80c4f17acd5…`, Q4_K_M, 2,0 GB.
+Executa na CPU (Intel Tiger Lake, sem GPU). Temperatura 0,1 e semente 42.
+
+**Garantias de projeto:**
+- A LLM recebe a probabilidade, o limiar e a classe **já calculados** e não tem acesso
+  ao modelo.
+- O app mostra os números vindos do classificador, e não da LLM.
+- A demonstração confere que a probabilidade recalculada depois da LLM é idêntica.
+- Se o Ollama falhar, o app continua funcionando e mostra o motivo. Isso é testado com
+  mocks em `tests/test_llm.py` e `tests/test_app.py`.
+
+**Verificação automática (`check_consistency`, heurística):** aponta probabilidade ou
+limiar não citados, percentuais não fornecidos, classe contraditória ("abaixo" quando
+está acima), texto cortado, possível atribuição causal ("aumentou o risco", "devido a…",
+"contribuiu para") e termos absolutos ("sem risco", "extremamente"). Se houver erro
+factual, `explain_checked` gera uma segunda resposta (temperatura 0,4) e fica com a que
+tiver menos avisos. Os avisos aparecem na interface.
+
+**Evolução do prompt, com 4 perfis HIPOTÉTICOS** (não são mutuários reais).
+As probabilidades são do modelo oficial: A 1,4%, B 10,9%, C 68,1% e D 14,6%; limiar 9,0%.
+
+| Versão | Estratégia | Resultado observado | Evidência |
+|---|---|---|---|
+| v1 | Texto livre, "até 120 palavras" | Números certos, mas cerca de 200 palavras, lista, 1 texto cortado e leitura errada da importância ("fatores não são relevantes para esse caso") | `reports/llm_demonstracao_v1_prompt_inicial.md` |
+| v2 | "EXATAMENTE 3 frases" | O modelo ignorou a estrutura: ~150 palavras e 3 de 4 textos cortados (o verificador detectou os 3) | `reports/llm_demonstracao_v2_tres_frases.md` |
+| v3 | Saída estruturada (JSON Schema, 3 campos) | Tamanho resolvido, mas omitiu o limiar e fez atribuição causal ("seguro devido à situação de moradia") | teste manual (log da sessão) |
+| v4 | v3 + 2 exemplos (few-shot) | Erro de comparação no perfil B ("10,9% está abaixo do limiar de 9,0%") e termo absoluto no A. **O verificador detectou os dois.** | teste manual (log da sessão) |
+| **v5 (atual)** | v4 + comparação pronta no prompt, proibição de qualificar os valores do cliente, exemplos com atributos diferentes dos reais e segunda geração em erro crítico | **4/4 corretos** (números, comparação e classe), 0 avisos, 1 tentativa cada, 72–84 palavras, 16–21 s por explicação | `reports/llm_demonstracao.md` e `.json`, `reports/logs/llm_demo_v5_2026-11-17.log` |
+
+Os exemplos do prompt v5 usam atributos de propósito diferentes dos reais ("prazo e
+situação de moradia"). Assim dá para conferir que a LLM cita os atributos realmente
+fornecidos (FICO, renda, consultas, valor, finalidade) e não copia o exemplo.
+
+**Limitações:**
+- A verificação é heurística. Juízos sobre o caso ("renda alta", "score baixo")
+  nem sempre são detectados.
+- O ganho de confiabilidade veio de restringir a forma: a v5 é quase um preenchimento
+  guiado. Com um modelo de 3B em CPU, essa foi a troca escolhida entre fluência e
+  fidelidade.
+- Cada explicação leva de 16 a 21 s em CPU. A primeira chamada inclui carregar o modelo,
+  cerca de 30 s.

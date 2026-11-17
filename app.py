@@ -16,7 +16,9 @@ from src.inference import (
     MISSING_LABEL, ArtefatosInvalidos, category_label, format_record_pt, load_metrics,
     load_model, percent_pt, predict_probability, validate_record, version_warnings,
 )
-from src.llm import LLMIndisponivel, build_prompt, check_consistency, check_ollama, explain_with_ollama
+from src.llm import (
+    CLOSING_SENTENCE, LLMIndisponivel, check_ollama, explain_checked,
+)
 
 st.set_page_config(page_title="LendingRisk AI", page_icon="📊", layout="wide")
 
@@ -255,13 +257,11 @@ with tab_simulate:
             with st.spinner("Gerando explicação local (na CPU pode levar até um minuto)..."):
                 started = time.time()
                 try:
-                    text = explain_with_ollama(probability, threshold, analysis["display"], top_features,
-                                               model_name=metrics["modelo_escolhido"])
-                    prompt = build_prompt(probability, threshold, analysis["display"], top_features,
-                                          metrics["modelo_escolhido"])
+                    result = explain_checked(probability, threshold, analysis["display"], top_features,
+                                             model_name=metrics["modelo_escolhido"])
                     st.session_state["explanation"] = {
-                        "analysis_id": analysis["id"], "text": text, "error": None,
-                        "warnings": check_consistency(text, probability, threshold, prompt),
+                        "analysis_id": analysis["id"], "text": result["texto"], "error": None,
+                        "warnings": result["avisos"], "attempts": result["tentativas"],
                         "seconds": round(time.time() - started, 1),
                     }
                 except LLMIndisponivel as exc:
@@ -272,7 +272,9 @@ with tab_simulate:
                 st.warning(f"LLM indisponível: {explanation['error']} A previsão acima continua válida.")
             else:
                 st.info(explanation["text"])
-                st.caption(f"Gerado em {explanation['seconds']} s.")
+                attempts = explanation.get("attempts", 1)
+                st.caption(f"{CLOSING_SENTENCE} Texto gerado em {explanation['seconds']} s"
+                           + (f" ({attempts} tentativas: a primeira falhou na verificação automática)." if attempts > 1 else "."))
                 if explanation["warnings"]:
                     st.warning("A verificação automática encontrou possíveis inconsistências no texto da LLM "
                                "(os valores corretos são os do classificador, acima):\n\n- "

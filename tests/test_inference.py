@@ -56,7 +56,7 @@ class InferenceTests(unittest.TestCase):
     def test_valor_fora_da_faixa_gera_aviso(self):
         metrics = load_metrics(self.metrics_path)
         _, warnings = validate_record({**EXAMPLE, "annual_inc": 9_000_000}, metrics["esquema_entrada"])
-        self.assertTrue(any("fora da faixa" in w for w in warnings))
+        self.assertTrue(any("fora da faixa" in w and "9.000.000" in w for w in warnings))
 
     def test_valores_invalidos(self):
         for field, value in [("dti", -1), ("loan_amnt", "abc"), ("annual_inc", float("nan"))]:

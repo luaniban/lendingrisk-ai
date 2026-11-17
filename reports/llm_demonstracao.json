@@ -1,0 +1,140 @@
+{
+  "aviso": "Perfis HIPOTÉTICOS de entrada (não são mutuários reais). Probabilidades calculadas pelo modelo treinado; textos gerados pela LLM local.",
+  "modelo_classificador": "XGBoost",
+  "limiar": 0.09,
+  "importancia_global_top5": [
+    "Score FICO (limite inferior da faixa)",
+    "Renda anual declarada (USD)",
+    "Consultas de crédito nos últimos 6 meses",
+    "Valor solicitado (USD)",
+    "Finalidade"
+  ],
+  "ollama": {
+    "url": "http://127.0.0.1:11434",
+    "modelo": "llama3.2:3b",
+    "versao_ollama": "0.40.16",
+    "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+    "tamanho_bytes": 2019393189,
+    "detalhes": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "llama",
+      "families": [
+        "llama"
+      ],
+      "parameter_size": "3.2B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 131072,
+      "embedding_length": 3072,
+      "runner": "ggml"
+    }
+  },
+  "prompt_sistema": "Você explica, em português do Brasil e para uma pessoa leiga, o resultado de um protótipo acadêmico de análise de risco de empréstimos treinado com dados históricos do Lending Club (EUA, 2007–2015).\nResponda SOMENTE com um JSON com três campos, cada um com UMA frase curta (no máximo 30 palavras):\n- \"probabilidade\": informe a probabilidade estimada de Charged Off (empréstimo baixado como perda) e o que ela significa, sem exagerar.\n- \"limiar\": compare a probabilidade com o limiar e diga a classificação resultante.\n- \"atributos\": cite os atributos que o modelo mais usa EM GERAL e diga que isso não explica este caso específico.\nRegras obrigatórias:\n- Use somente os números fornecidos, escritos exatamente como aparecem. Não calcule, não estime e não altere nenhum valor.\n- Não diga que algum dado deste cliente aumentou, reduziu ou causou o risco: esse efeito individual não foi medido.\n- Não use palavras absolutas como \"certamente\", \"extremamente seguro\" ou \"será perdido\": é uma estimativa.\n- Não invente estatísticas, causas, regras de crédito ou comparações. Não repita a lista de dados do cliente.\n- Não recomende aprovar, recusar ou alterar o empréstimo.\n- No campo \"atributos\", não comente nem qualifique os valores deste cliente (não diga que a renda é alta, o score é baixo etc.).\n- No campo \"limiar\", use a comparação fornecida (acima/abaixo) exatamente como está.\nExemplos de formato (os números dos exemplos NÃO são deste caso; use sempre os números fornecidos):\n{\"probabilidade\": \"O modelo estimou em 23,4% a chance de este empréstimo terminar como Charged Off, isto é, ser baixado como perda.\", \"limiar\": \"Como 23,4% está acima do limiar de 12,0%, o empréstimo foi classificado como Charged Off, um perfil de maior risco pelo critério adotado.\", \"atributos\": \"Em geral, o modelo dá mais peso a atributos como prazo e situação de moradia, mas essa importância é global e não explica este caso específico.\"}\n{\"probabilidade\": \"O modelo estimou em 5,2% a chance de este empréstimo terminar como Charged Off, isto é, ser baixado como perda.\", \"limiar\": \"Como 5,2% está abaixo do limiar de 12,0%, o empréstimo foi classificado como Fully Paid, sem sinal de risco elevado pelo critério adotado.\", \"atributos\": \"Em geral, o modelo dá mais peso a atributos como prazo e situação de moradia, mas essa importância é global e não explica este caso específico.\"}",
+  "resultados": [
+    {
+      "perfil": "A — FICO alto, DTI baixo, 36 meses",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 8.000",
+        "Renda anual declarada (USD)": "US$ 120.000",
+        "Relação dívida/renda — DTI (%)": "8,0%",
+        "Score FICO (limite inferior da faixa)": "780",
+        "Consultas de crédito nos últimos 6 meses": "0",
+        "Uso do crédito rotativo (%)": "15,0%",
+        "Prazo": "36 meses",
+        "Finalidade": "Quitar cartão de crédito",
+        "Situação de moradia": "Imóvel financiado (hipoteca)",
+        "Tempo de emprego": "10 anos ou mais"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.014044,
+      "limiar": 0.09,
+      "classe": "Fully Paid",
+      "explicacao": "O modelo estimou em 1,4% a chance de este empréstimo terminar como Charged Off, isto é, ser baixado como perda. Como 1,4% está abaixo do limiar de 9,0%, o empréstimo foi classificado como Fully Paid, sem sinal de risco elevado pelo critério adotado. Em geral, o modelo dá mais peso a atributos como Score FICO, Renda anual declarada e Consultas de crédito nos últimos 6 meses, mas essa importância é global e não explica este caso específico.",
+      "erro": null,
+      "verificacao": [],
+      "tentativas": 1,
+      "prompt_usuario": "RESULTADO CALCULADO PELO CLASSIFICADOR DE MACHINE LEARNING (XGBoost) — não altere:\n- Probabilidade estimada de Charged Off (empréstimo baixado como perda): 1,4%\n- Limiar de classificação definido na validação: 9,0%\n- Comparação (já conferida; copie): 1,4% está abaixo do limiar de 9,0%\n- Classificação: ABAIXO do limiar — classe prevista: Fully Paid (empréstimo sem sinal de risco elevado pelo critério adotado)\n\nDADOS INFORMADOS PELO USUÁRIO (apenas contexto; não repita esta lista):\n- Valor solicitado (USD): US$ 8.000\n- Renda anual declarada (USD): US$ 120.000\n- Relação dívida/renda — DTI (%): 8,0%\n- Score FICO (limite inferior da faixa): 780\n- Consultas de crédito nos últimos 6 meses: 0\n- Uso do crédito rotativo (%): 15,0%\n- Prazo: 36 meses\n- Finalidade: Quitar cartão de crédito\n- Situação de moradia: Imóvel financiado (hipoteca)\n- Tempo de emprego: 10 anos ou mais\n\nATRIBUTOS MAIS IMPORTANTES DO MODELO EM GERAL (importância global, NÃO deste caso): Score FICO (limite inferior da faixa), Renda anual declarada (USD), Consultas de crédito nos últimos 6 meses, Valor solicitado (USD), Finalidade\n\nExplique esse resultado para uma pessoa leiga.",
+      "segundos": 18.5,
+      "probabilidade_recalculada_igual": true
+    },
+    {
+      "perfil": "B — perfil mediano, 36 meses",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 12.000",
+        "Renda anual declarada (USD)": "US$ 65.000",
+        "Relação dívida/renda — DTI (%)": "17,6%",
+        "Score FICO (limite inferior da faixa)": "690",
+        "Consultas de crédito nos últimos 6 meses": "0",
+        "Uso do crédito rotativo (%)": "52,0%",
+        "Prazo": "36 meses",
+        "Finalidade": "Consolidação de dívidas",
+        "Situação de moradia": "Aluguel",
+        "Tempo de emprego": "3 anos"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.108879,
+      "limiar": 0.09,
+      "classe": "Charged Off",
+      "explicacao": "O modelo estimou em 10,9% a chance de este empréstimo terminar como Charged Off, isto é, ser baixado como perda. Como 10,9% está acima do limiar de 9,0%, o empréstimo foi classificado como Charged Off, um perfil de maior risco pelo critério adotado. Em geral, o modelo dá mais peso a atributos como Score FICO, Renda anual declarada e Valor solicitado, mas essa importância é global e não explica este caso específico.",
+      "erro": null,
+      "verificacao": [],
+      "tentativas": 1,
+      "prompt_usuario": "RESULTADO CALCULADO PELO CLASSIFICADOR DE MACHINE LEARNING (XGBoost) — não altere:\n- Probabilidade estimada de Charged Off (empréstimo baixado como perda): 10,9%\n- Limiar de classificação definido na validação: 9,0%\n- Comparação (já conferida; copie): 10,9% está acima do limiar de 9,0%\n- Classificação: ACIMA do limiar — classe prevista: Charged Off (empréstimo com perfil de maior risco de perda)\n\nDADOS INFORMADOS PELO USUÁRIO (apenas contexto; não repita esta lista):\n- Valor solicitado (USD): US$ 12.000\n- Renda anual declarada (USD): US$ 65.000\n- Relação dívida/renda — DTI (%): 17,6%\n- Score FICO (limite inferior da faixa): 690\n- Consultas de crédito nos últimos 6 meses: 0\n- Uso do crédito rotativo (%): 52,0%\n- Prazo: 36 meses\n- Finalidade: Consolidação de dívidas\n- Situação de moradia: Aluguel\n- Tempo de emprego: 3 anos\n\nATRIBUTOS MAIS IMPORTANTES DO MODELO EM GERAL (importância global, NÃO deste caso): Score FICO (limite inferior da faixa), Renda anual declarada (USD), Consultas de crédito nos últimos 6 meses, Valor solicitado (USD), Finalidade\n\nExplique esse resultado para uma pessoa leiga.",
+      "segundos": 16.3,
+      "probabilidade_recalculada_igual": true
+    },
+    {
+      "perfil": "C — FICO no mínimo usual, DTI alto, 60 meses",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 30.000",
+        "Renda anual declarada (USD)": "US$ 40.000",
+        "Relação dívida/renda — DTI (%)": "35,0%",
+        "Score FICO (limite inferior da faixa)": "660",
+        "Consultas de crédito nos últimos 6 meses": "3",
+        "Uso do crédito rotativo (%)": "90,0%",
+        "Prazo": "60 meses",
+        "Finalidade": "Pequeno negócio",
+        "Situação de moradia": "Aluguel",
+        "Tempo de emprego": "Menos de 1 ano"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.680605,
+      "limiar": 0.09,
+      "classe": "Charged Off",
+      "explicacao": "O modelo estimou em 68,1% a chance de este empréstimo terminar como Charged Off, o que significa que há uma grande probabilidade de o empréstimo ser baixado como perda. Como 68,1% está acima do limiar de 9,0%, o empréstimo foi classificado como Charged Off, indicando um perfil de maior risco de perda. Em geral, o modelo considera atributos como Score FICO, renda anual, consultas de crédito e valor solicitado, mas essas características não explicam por que este empréstimo foi classificado como de maior risco.",
+      "erro": null,
+      "verificacao": [],
+      "tentativas": 1,
+      "prompt_usuario": "RESULTADO CALCULADO PELO CLASSIFICADOR DE MACHINE LEARNING (XGBoost) — não altere:\n- Probabilidade estimada de Charged Off (empréstimo baixado como perda): 68,1%\n- Limiar de classificação definido na validação: 9,0%\n- Comparação (já conferida; copie): 68,1% está acima do limiar de 9,0%\n- Classificação: ACIMA do limiar — classe prevista: Charged Off (empréstimo com perfil de maior risco de perda)\n\nDADOS INFORMADOS PELO USUÁRIO (apenas contexto; não repita esta lista):\n- Valor solicitado (USD): US$ 30.000\n- Renda anual declarada (USD): US$ 40.000\n- Relação dívida/renda — DTI (%): 35,0%\n- Score FICO (limite inferior da faixa): 660\n- Consultas de crédito nos últimos 6 meses: 3\n- Uso do crédito rotativo (%): 90,0%\n- Prazo: 60 meses\n- Finalidade: Pequeno negócio\n- Situação de moradia: Aluguel\n- Tempo de emprego: Menos de 1 ano\n\nATRIBUTOS MAIS IMPORTANTES DO MODELO EM GERAL (importância global, NÃO deste caso): Score FICO (limite inferior da faixa), Renda anual declarada (USD), Consultas de crédito nos últimos 6 meses, Valor solicitado (USD), Finalidade\n\nExplique esse resultado para uma pessoa leiga.",
+      "segundos": 19.6,
+      "probabilidade_recalculada_igual": true
+    },
+    {
+      "perfil": "D — tempo de emprego não informado",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 15.000",
+        "Renda anual declarada (USD)": "US$ 55.000",
+        "Relação dívida/renda — DTI (%)": "22,0%",
+        "Score FICO (limite inferior da faixa)": "700",
+        "Consultas de crédito nos últimos 6 meses": "1",
+        "Uso do crédito rotativo (%)": "60,0%",
+        "Prazo": "36 meses",
+        "Finalidade": "Reforma da casa",
+        "Situação de moradia": "Imóvel próprio quitado",
+        "Tempo de emprego": "Não informado"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.145827,
+      "limiar": 0.09,
+      "classe": "Charged Off",
+      "explicacao": "O modelo estimou em 14,6% a chance de este empréstimo terminar como Charged Off, o que significa que há uma probabilidade moderada de o empréstimo ser baixado como perda. Como 14,6% está acima do limiar de 9,0%, o empréstimo foi classificado como Charged Off, indicando um perfil de maior risco de perda. Em geral, o modelo considera os atributos como Score FICO, renda anual, consultas de crédito, valor solicitado e finalidade, mas esses fatores não explicam a classificação deste caso específico.",
+      "erro": null,
+      "verificacao": [],
+      "tentativas": 1,
+      "prompt_usuario": "RESULTADO CALCULADO PELO CLASSIFICADOR DE MACHINE LEARNING (XGBoost) — não altere:\n- Probabilidade estimada de Charged Off (empréstimo baixado como perda): 14,6%\n- Limiar de classificação definido na validação: 9,0%\n- Comparação (já conferida; copie): 14,6% está acima do limiar de 9,0%\n- Classificação: ACIMA do limiar — classe prevista: Charged Off (empréstimo com perfil de maior risco de perda)\n\nDADOS INFORMADOS PELO USUÁRIO (apenas contexto; não repita esta lista):\n- Valor solicitado (USD): US$ 15.000\n- Renda anual declarada (USD): US$ 55.000\n- Relação dívida/renda — DTI (%): 22,0%\n- Score FICO (limite inferior da faixa): 700\n- Consultas de crédito nos últimos 6 meses: 1\n- Uso do crédito rotativo (%): 60,0%\n- Prazo: 36 meses\n- Finalidade: Reforma da casa\n- Situação de moradia: Imóvel próprio quitado\n- Tempo de emprego: Não informado\n\nATRIBUTOS MAIS IMPORTANTES DO MODELO EM GERAL (importância global, NÃO deste caso): Score FICO (limite inferior da faixa), Renda anual declarada (USD), Consultas de crédito nos últimos 6 meses, Valor solicitado (USD), Finalidade\n\nExplique esse resultado para uma pessoa leiga.",
+      "segundos": 20.8,
+      "probabilidade_recalculada_igual": true
+    }
+  ],
+  "criado_em_utc": "2026-11-17T12:59:29.890435+00:00"
+}

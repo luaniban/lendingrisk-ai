@@ -1,0 +1,131 @@
+{
+  "aviso": "Perfis HIPOTÉTICOS de entrada (não são mutuários reais). Probabilidades calculadas pelo modelo treinado; textos gerados pela LLM local.",
+  "modelo_classificador": "XGBoost",
+  "limiar": 0.09,
+  "importancia_global_top5": [
+    "Score FICO (limite inferior da faixa)",
+    "Renda anual declarada (USD)",
+    "Consultas de crédito nos últimos 6 meses",
+    "Valor solicitado (USD)",
+    "Finalidade"
+  ],
+  "ollama": {
+    "url": "http://127.0.0.1:11434",
+    "modelo": "llama3.2:3b",
+    "versao_ollama": "0.40.16",
+    "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+    "tamanho_bytes": 2019393189,
+    "detalhes": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "llama",
+      "families": [
+        "llama"
+      ],
+      "parameter_size": "3.2B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 131072,
+      "embedding_length": 3072,
+      "runner": "ggml"
+    }
+  },
+  "resultados": [
+    {
+      "perfil": "A — FICO alto, DTI baixo, 36 meses",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 8.000",
+        "Renda anual declarada (USD)": "US$ 120.000",
+        "Relação dívida/renda — DTI (%)": "8,0%",
+        "Score FICO (limite inferior da faixa)": "780",
+        "Consultas de crédito nos últimos 6 meses": "0",
+        "Uso do crédito rotativo (%)": "15,0%",
+        "Prazo": "36 meses",
+        "Finalidade": "Quitar cartão de crédito",
+        "Situação de moradia": "Imóvel financiado (hipoteca)",
+        "Tempo de emprego": "10 anos ou mais"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.014044,
+      "limiar": 0.09,
+      "classe": "Fully Paid",
+      "explicacao": "O modelo de análise de risco de empréstimos usou um algoritmo chamado XGBoost para avaliar o risco de um empréstimo de US$ 8.000. O resultado foi que o empréstimo foi classificado como \"Fully Paid\", o que significa que o modelo acredita que o empréstimo não apresenta risco elevado.\n\nO modelo considerou vários fatores, como a renda anual declarada (US$ 120.000), a relação dívida/renda (8,0%), o score FICO (780), o uso do crédito rotativo (15,0%) e a finalidade do empréstimo (quitá- cartão de crédito). Além disso, o modelo também considerou que o empréstimo foi solicitado por uma pessoa que tem um tempo de emprego de 10 anos ou mais e que mora em um imóvel financiado.\n\nO modelo estima que a probabilidade de o empréstimo ser \"Charged Off\" (baixado como perda) é de 1,4%, o que é muito baixo. O limiar de classificação definido é de 9,0%, o que significa que o modelo considera que o empréstimo está abaixo desse limiar e, portanto, não apresenta risco elevado.\n\nEsta é uma estimativa acadêmica e não substitui a análise humana.",
+      "erro": null,
+      "verificacao": [],
+      "segundos": 32.5,
+      "probabilidade_recalculada_igual": true
+    },
+    {
+      "perfil": "B — perfil mediano, 36 meses",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 12.000",
+        "Renda anual declarada (USD)": "US$ 65.000",
+        "Relação dívida/renda — DTI (%)": "17,6%",
+        "Score FICO (limite inferior da faixa)": "690",
+        "Consultas de crédito nos últimos 6 meses": "0",
+        "Uso do crédito rotativo (%)": "52,0%",
+        "Prazo": "36 meses",
+        "Finalidade": "Consolidação de dívidas",
+        "Situação de moradia": "Aluguel",
+        "Tempo de emprego": "3 anos"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.108879,
+      "limiar": 0.09,
+      "classe": "Charged Off",
+      "explicacao": "O modelo de análise de risco de empréstimos usou uma técnica de aprendizado de máquina chamada XGBoost para avaliar o risco de um empréstimo de US$ 12.000. O resultado foi que o empréstimo apresenta uma probabilidade de 10,9% de ser considerado \"Charged Off\" (empréstimo com perfil de maior risco de perda).\n\nIsso significa que, com base nos dados fornecidos, o modelo considerou que o empréstimo apresentava um risco moderado. No entanto, o limiar de classificação definido foi de 9,0%, o que significa que o empréstimo foi classificado como \"ACIMA do limiar\" e, portanto, considerado de maior risco.\n\nOs atributos mais importantes do modelo em geral são:\n\n* Score FICO (limite inferior da faixa): 690\n* Renda anual declarada (USD): US$ 65.000\n* Consultas de crédito nos últimos 6 meses: 0\n* Valor solicitado (USD): US$ 12.000\n* Finalidade: Consolidação de dívidas\n\nEsses atributos foram considerados importantes para avaliar o risco do empréstimo. No entanto, é importante notar que esses atributos não explicam o resultado específico deste caso, mas sim fornecem uma ideia geral do que o modelo considerou importante ao",
+      "erro": null,
+      "verificacao": [],
+      "segundos": 29.0,
+      "probabilidade_recalculada_igual": true
+    },
+    {
+      "perfil": "C — FICO no mínimo usual, DTI alto, 60 meses",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 30.000",
+        "Renda anual declarada (USD)": "US$ 40.000",
+        "Relação dívida/renda — DTI (%)": "35,0%",
+        "Score FICO (limite inferior da faixa)": "660",
+        "Consultas de crédito nos últimos 6 meses": "3",
+        "Uso do crédito rotativo (%)": "90,0%",
+        "Prazo": "60 meses",
+        "Finalidade": "Pequeno negócio",
+        "Situação de moradia": "Aluguel",
+        "Tempo de emprego": "Menos de 1 ano"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.680605,
+      "limiar": 0.09,
+      "classe": "Charged Off",
+      "explicacao": "O modelo de análise de risco de empréstimos usou uma técnica de aprendizado de máquina chamada XGBoost para avaliar o risco de um empréstimo de US$ 30.000. O resultado foi que o modelo prevê que o empréstimo tenha uma probabilidade de 68,1% de ser \"Charged Off\" (empréstimo baixado como perda).\n\nIsso significa que, de acordo com o modelo, o empréstimo é considerado de alto risco de perda. O modelo também definiu um limiar de classificação de 9,0%, o que significa que qualquer empréstimo com uma probabilidade acima desse valor é considerado de alto risco.\n\nO modelo considerou vários fatores, incluindo a renda anual declarada, o score FICO, o número de consultas de crédito nos últimos 6 meses, o valor solicitado, a finalidade do empréstimo e a situação de moradia. No entanto, é importante notar que esses fatores são apenas uma representação geral do risco e não explicam o caso específico desse empréstimo.\n\nEsta é uma estimativa acadêmica e não substitui a análise humana.",
+      "erro": null,
+      "verificacao": [],
+      "segundos": 25.1,
+      "probabilidade_recalculada_igual": true
+    },
+    {
+      "perfil": "D — tempo de emprego não informado",
+      "entrada": {
+        "Valor solicitado (USD)": "US$ 15.000",
+        "Renda anual declarada (USD)": "US$ 55.000",
+        "Relação dívida/renda — DTI (%)": "22,0%",
+        "Score FICO (limite inferior da faixa)": "700",
+        "Consultas de crédito nos últimos 6 meses": "1",
+        "Uso do crédito rotativo (%)": "60,0%",
+        "Prazo": "36 meses",
+        "Finalidade": "Reforma da casa",
+        "Situação de moradia": "Imóvel próprio quitado",
+        "Tempo de emprego": "Não informado"
+      },
+      "avisos_entrada": [],
+      "probabilidade": 0.145827,
+      "limiar": 0.09,
+      "classe": "Charged Off",
+      "explicacao": "O modelo de análise de risco de empréstimos usou uma técnica de aprendizado de máquina chamada XGBoost para avaliar o risco de um empréstimo de US$ 15.000. O resultado foi que o empréstimo apresenta uma probabilidade de 14,6% de ser considerado \"Charged Off\" (perda), o que significa que o empréstimo tem um perfil de maior risco de não ser pago.\n\nO modelo considerou vários fatores, incluindo o valor do empréstimo, a renda anual do solicitante, a relação dívida/renda, o score FICO, o número de consultas de crédito nos últimos 6 meses, o uso do crédito rotativo e o prazo do empréstimo. No entanto, é importante notar que esses fatores não são relevantes para esse caso específico, pois o modelo está apenas fornecendo uma estimativa geral.\n\nO modelo também definiu um limiar de classificação de 9,0%, o que significa que se o empréstimo for acima desse valor, ele será considerado \"Charged Off\". Nesse caso, o empréstimo está acima do limiar, o que significa que o modelo está indicando que o empréstimo tem um perfil de maior risco de não ser pago.\n\nEsta é uma estimativa acadêmica e não substitui a análise humana.",
+      "erro": null,
+      "verificacao": [],
+      "segundos": 29.8,
+      "probabilidade_recalculada_igual": true
+    }
+  ],
+  "criado_em_utc": "2026-11-17T12:48:40.411219+00:00"
+}

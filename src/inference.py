@@ -97,8 +97,9 @@ def validate_record(record: dict, schema: dict | None = None) -> tuple[dict, lis
         stats = (schema or {}).get("numericos", {}).get(col)
         if stats and not stats["p01"] <= value <= stats["p99"]:
             warnings.append(
-                f"{FEATURE_LABELS[col]} = {value:g} está fora da faixa usual do treino "
-                f"(1%–99%: {stats['p01']:g} a {stats['p99']:g}); a estimativa é menos confiável."
+                f"{FEATURE_LABELS[col]} = {_number_pt(value)} está fora da faixa usual do treino "
+                f"(1%–99%: {_number_pt(stats['p01'])} a {_number_pt(stats['p99'])}); "
+                "a estimativa é menos confiável."
             )
         clean[col] = value
     for col in CATEGORICAL_FEATURES:
@@ -131,6 +132,10 @@ def category_label(column: str, value) -> str:
 def _brl_number(value: float, decimals: int = 0) -> str:
     text = f"{value:,.{decimals}f}"
     return text.replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _number_pt(value: float) -> str:
+    return _brl_number(value, 0 if float(value).is_integer() else 1)
 
 
 def format_record_pt(record: dict) -> dict:

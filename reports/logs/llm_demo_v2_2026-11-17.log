@@ -1,0 +1,5 @@
+A — FICO alto, DTI baixo, 36 meses: 1,4% -> Fully Paid (24.4 s); avisos: 1; erro: None
+B — perfil mediano, 36 meses: 10,9% -> Charged Off (12.5 s); avisos: 0; erro: None
+C — FICO no mínimo usual, DTI alto, 60 meses: 68,1% -> Charged Off (25.2 s); avisos: 1; erro: None
+D — tempo de emprego não informado: 14,6% -> Charged Off (24.2 s); avisos: 1; erro: None
+tempo_total=87.52 s; rss_max=211272 KB

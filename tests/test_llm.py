@@ -33,6 +33,13 @@ class PromptTests(unittest.TestCase):
     def test_system_prompt_restritivo(self):
         self.assertIn("Não calcule", llm.SYSTEM_PROMPT)
         self.assertIn("Não recomende aprovar", llm.SYSTEM_PROMPT)
+        self.assertIn("JSON com três campos", llm.SYSTEM_PROMPT)
+        self.assertIn("não comente nem qualifique", llm.SYSTEM_PROMPT)
+
+    def test_comparacao_resolvida_no_prompt(self):
+        self.assertIn("23,4% está acima do limiar de 18,0%", llm.build_prompt(0.234, 0.18, INPUTS, []))
+        self.assertIn("10,0% está abaixo do limiar de 18,0%", llm.build_prompt(0.10, 0.18, INPUTS, []))
+        self.assertIn("não repita", llm.build_prompt(0.2, 0.1, INPUTS, []))
 
 
 class OllamaCallTests(unittest.TestCase):
@@ -46,6 +53,7 @@ class OllamaCallTests(unittest.TestCase):
         self.assertEqual(body["options"]["num_predict"], llm.MAX_TOKENS)
         self.assertFalse(body["stream"])
         self.assertIn("system", body)
+        self.assertEqual(body["format"]["required"], list(llm.RESPONSE_FIELDS))
         self.assertEqual(post.call_args.kwargs["timeout"], (llm.CONNECT_TIMEOUT_S, llm.READ_TIMEOUT_S))
         self.assertTrue(post.call_args.args[0].endswith("/api/generate"))
 
@@ -91,6 +99,38 @@ class OllamaCallTests(unittest.TestCase):
         self.assertFalse(llm.check_ollama()["ok"])
 
 
+class CheckedExplanationTests(unittest.TestCase):
+    GOOD = '{"probabilidade": "A chance estimada é de 23,4%.", "limiar": "Fica acima do limiar de 18,0%.", ' \
+           '"atributos": "A importância é global e não explica este caso."}'
+    BAD = '{"probabilidade": "A chance estimada é de 23,4%.", "limiar": "Fica abaixo do limiar de 18,0%.", ' \
+          '"atributos": "A importância é global e não explica este caso."}'
+
+    @mock.patch("src.llm.requests.post")
+    def test_sem_erro_critico_gera_uma_vez(self, post):
+        post.return_value = _response(payload={"response": self.GOOD})
+        result = llm.explain_checked(0.234, 0.18, INPUTS, [])
+        self.assertEqual(result["tentativas"], 1)
+        self.assertEqual(result["avisos"], [])
+        self.assertEqual(post.call_count, 1)
+
+    @mock.patch("src.llm.requests.post")
+    def test_erro_critico_gera_de_novo_e_fica_com_a_melhor(self, post):
+        post.side_effect = [_response(payload={"response": self.BAD}), _response(payload={"response": self.GOOD})]
+        result = llm.explain_checked(0.234, 0.18, INPUTS, [])
+        self.assertEqual(result["tentativas"], 2)
+        self.assertEqual(result["avisos"], [])
+        self.assertIn("acima do limiar", result["texto"])
+        second_options = post.call_args_list[1].kwargs["json"]["options"]
+        self.assertEqual(second_options["temperature"], llm.RETRY_OPTIONS["temperature"])
+
+    @mock.patch("src.llm.requests.post")
+    def test_erro_persistente_devolve_com_avisos(self, post):
+        post.return_value = _response(payload={"response": self.BAD})
+        result = llm.explain_checked(0.234, 0.18, INPUTS, [])
+        self.assertEqual(result["tentativas"], 2)
+        self.assertTrue(llm.is_critical(result["avisos"]))
+
+
 class ConsistencyTests(unittest.TestCase):
     def setUp(self):
         self.prompt = llm.build_prompt(0.234, 0.18, INPUTS, [])
@@ -107,6 +147,34 @@ class ConsistencyTests(unittest.TestCase):
     def test_probabilidade_omitida_ou_alterada(self):
         warnings = llm.check_consistency("O risco é de 30%.", 0.234, 0.18, self.prompt)
         self.assertTrue(any("não cita a probabilidade" in w for w in warnings))
+
+    def test_texto_cortado(self):
+        warnings = llm.check_consistency("A probabilidade é de 23,4%, acima do limiar de 18,0%, e o", 0.234, 0.18,
+                                         self.prompt)
+        self.assertTrue(any("cortado" in w for w in warnings))
+
+    def test_atribuicao_causal(self):
+        for text in ["A renda alta reduziu o risco deste caso para 23,4%.",
+                     "O FICO baixo aumentou a probabilidade, que ficou em 23,4%.",
+                     "Com 23,4%, esses fatores não são relevantes para este caso.",
+                     "Com 23,4%, acima do limiar de 18,0%, é arriscado devido à moradia."]:
+            warnings = llm.check_consistency(text, 0.234, 0.18, self.prompt)
+            self.assertTrue(any("causa" in w for w in warnings), text)
+        ok = "A probabilidade de 23,4% indica um empréstimo com risco elevado, acima do limiar de 18,0%."
+        self.assertFalse(any("causa" in w for w in llm.check_consistency(ok, 0.234, 0.18, self.prompt)))
+
+    def test_limiar_omitido_e_termos_absolutos(self):
+        warnings = llm.check_consistency("A chance é de 23,4%, então certamente não há risco.", 0.234, 0.18,
+                                         self.prompt)
+        self.assertTrue(any("não cita o limiar" in w for w in warnings))
+        self.assertTrue(any("absolutos" in w for w in warnings))
+
+    def test_compoe_json_estruturado(self):
+        text = llm.compose_text('{"probabilidade": "A chance é 23,4%", "limiar": "Fica acima do limiar de 18,0%.",'
+                                ' "atributos": "Importância global não explica este caso."}')
+        self.assertEqual(text, "A chance é 23,4%. Fica acima do limiar de 18,0%. Importância global não explica este caso.")
+        self.assertEqual(llm.compose_text("texto livre"), "texto livre")
+        self.assertEqual(llm.compose_text("[1, 2]"), "[1, 2]")
 
     def test_classe_contraditoria(self):
         text = "Com 23,4%, o caso ficou abaixo do limiar."

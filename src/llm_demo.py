@@ -22,7 +22,7 @@ import requests
 
 from src.config import FEATURE_LABELS, LLM_MODEL, METRICS_PATH, MODEL_PATH, OLLAMA_URL, REPORT_DIR
 from src.inference import format_record_pt, load_metrics, load_model, percent_pt, predict_probability, validate_record
-from src.llm import LLMIndisponivel, build_prompt, check_consistency, explain_with_ollama
+from src.llm import LLMIndisponivel, SYSTEM_PROMPT, build_prompt, explain_checked
 
 PROFILES = {
     "A — FICO alto, DTI baixo, 36 meses": {
@@ -78,23 +78,24 @@ def run(report_dir: Path = REPORT_DIR) -> dict:
                 "classe": "Charged Off" if probability >= threshold else "Fully Paid"}
         started = time.time()
         try:
-            text = explain_with_ollama(probability, threshold, display, top, model_name=metrics["modelo_escolhido"])
-            item.update({"explicacao": text, "erro": None,
-                         "verificacao": check_consistency(text, probability, threshold, prompt)})
+            result = explain_checked(probability, threshold, display, top, model_name=metrics["modelo_escolhido"])
+            item.update({"explicacao": result["texto"], "erro": None, "verificacao": result["avisos"],
+                         "tentativas": result["tentativas"], "prompt_usuario": prompt})
         except LLMIndisponivel as exc:
             item.update({"explicacao": None, "erro": str(exc), "verificacao": []})
         item["segundos"] = round(time.time() - started, 1)
         # a probabilidade não muda depois da LLM (a LLM não tem acesso ao modelo)
         item["probabilidade_recalculada_igual"] = predict_probability(model, record) == probability
         results.append(item)
-        print(f"{name}: {percent_pt(probability)} -> {item['classe']} ({item['segundos']} s); "
-              f"avisos: {len(item['verificacao'])}; erro: {item['erro']}", flush=True)
+        print(f"{name}: {percent_pt(probability)} -> {item['classe']} ({item['segundos']} s; "
+              f"tentativas: {item.get('tentativas')}); avisos: {item['verificacao']}; erro: {item['erro']}", flush=True)
 
     payload = {
         "aviso": "Perfis HIPOTÉTICOS de entrada (não são mutuários reais). Probabilidades calculadas pelo "
                  "modelo treinado; textos gerados pela LLM local.",
         "modelo_classificador": metrics["modelo_escolhido"], "limiar": threshold,
         "importancia_global_top5": top, "ollama": ollama_metadata(OLLAMA_URL, LLM_MODEL),
+        "prompt_sistema": SYSTEM_PROMPT,
         "resultados": results, "criado_em_utc": datetime.now(timezone.utc).isoformat(),
     }
     (report_dir / "llm_demonstracao.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2),
@@ -105,7 +106,10 @@ def run(report_dir: Path = REPORT_DIR) -> dict:
         f"- Classificador: **{payload['modelo_classificador']}**, limiar {percent_pt(threshold)}",
         f"- LLM: `{LLM_MODEL}` via Ollama {payload['ollama'].get('versao_ollama', '?')} "
         f"(digest `{str(payload['ollama'].get('digest', '?'))[:12]}`), temperatura 0,1, execução local em CPU",
-        f"- Gerado em {payload['criado_em_utc']}", "",
+        f"- Gerado em {payload['criado_em_utc']}",
+        "- A interface exibe, abaixo de cada explicação: \"Esta é uma estimativa acadêmica e não substitui "
+        "a análise humana.\"", "",
+        "<details><summary>Prompt de sistema usado</summary>", "", "```text", SYSTEM_PROMPT, "```", "</details>", "",
     ]
     for item in results:
         lines += [f"## Perfil {item['perfil']}", "",
@@ -117,7 +121,7 @@ def run(report_dir: Path = REPORT_DIR) -> dict:
             lines += [f"**LLM indisponível:** {item['erro']}", ""]
         else:
             lines += ["**Explicação gerada pela LLM** "
-                      f"({item['segundos']} s):", "", *[f"> {line}" if line else ">" for line in
+                      f"({item['segundos']} s, {item.get('tentativas', 1)} tentativa(s)):", "", *[f"> {line}" if line else ">" for line in
                                                         item["explicacao"].splitlines()], ""]
             lines += ["**Verificação automática:** " + (
                 "nenhuma inconsistência encontrada." if not item["verificacao"]
