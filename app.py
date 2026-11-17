@@ -1,9 +1,14 @@
-"""Interface de demonstração do LendingRisk AI (projeto final CARCDSI — IFSP Caraguatatuba).
+"""Interface de demonstração do LendingRisk AI (projeto final CARCDSI, IFSP Caraguatatuba).
 
 Executar a partir da raiz do projeto:  python -m streamlit run app.py
+
+Layout de "dossiê de crédito": a proposta (formulário) fica ao lado do parecer
+(resultado). O tema (cores e fontes) está em .streamlit/config.toml; os poucos
+elementos próprios (régua de risco, carimbo, ficha técnica) usam o CSS de STYLE.
 """
 from __future__ import annotations
 
+import html
 import math
 import time
 
@@ -11,7 +16,7 @@ import pandas as pd
 import streamlit as st
 
 from src import config
-from src.config import CATEGORICAL_FEATURES, FEATURE_LABELS, NUMERIC_FEATURES
+from src.config import FEATURE_LABELS, NUMERIC_FEATURES
 from src.inference import (
     MISSING_LABEL, ArtefatosInvalidos, category_label, format_record_pt, load_metrics,
     load_model, percent_pt, predict_probability, validate_record, version_warnings,
@@ -20,14 +25,14 @@ from src.llm import (
     CLOSING_SENTENCE, LLMIndisponivel, check_ollama, explain_checked,
 )
 
-st.set_page_config(page_title="LendingRisk AI", page_icon="📊", layout="wide")
+st.set_page_config(page_title="LendingRisk AI", page_icon=":material/account_balance:", layout="wide")
 
 METRIC_INFO = {
     "average_precision": ("Average Precision (AP)", "Resumo da curva precisão × recall. Um modelo aleatório teria AP ≈ taxa de Charged Off."),
     "roc_auc": ("ROC-AUC", "Chance de um Charged Off receber score maior que um Fully Paid (0,5 = aleatório)."),
     "brier": ("Brier score", "Erro quadrático médio da probabilidade (menor é melhor)."),
     "log_loss": ("Log loss", "Penaliza probabilidades confiantes e erradas (menor é melhor)."),
-    "ece": ("ECE — erro de calibração", "Diferença média entre probabilidade prevista e taxa observada (menor é melhor)."),
+    "ece": ("ECE (erro de calibração)", "Diferença média entre probabilidade prevista e taxa observada (menor é melhor)."),
     "recall": ("Recall", "Fração dos Charged Off reais que o modelo sinalizou acima do limiar."),
     "precision": ("Precision", "Fração dos sinalizados que de fato terminaram em Charged Off."),
     "f1": ("F1", "Média harmônica de precision e recall."),
@@ -35,6 +40,14 @@ METRIC_INFO = {
     "acuracia": ("Acurácia", "Acertos totais. Enganosa com classes desbalanceadas."),
     "taxa_positiva_real": ("Taxa real de Charged Off", "Proporção de Charged Off no conjunto."),
     "taxa_positiva_prevista": ("Taxa sinalizada pelo modelo", "Proporção de casos acima do limiar."),
+}
+# Rótulos curtos no formulário; a descrição completa fica no "?" de cada campo.
+FORM_LABELS = {
+    "loan_amnt": "Valor solicitado (US$)", "term": "Prazo",
+    "annual_inc": "Renda anual (US$)", "dti": "Dívida/renda, DTI (%)",
+    "fico_range_low": "Score FICO", "inq_last_6mths": "Consultas em 6 meses",
+    "revol_util": "Uso do rotativo (%)", "purpose": "Finalidade",
+    "home_ownership": "Moradia", "emp_length": "Tempo de emprego",
 }
 FIELD_HELP = {
     "loan_amnt": "Valor do empréstimo solicitado, em dólares americanos (USD).",
@@ -57,14 +70,89 @@ FORM_ROWS = [("loan_amnt", "term"), ("annual_inc", "dti"), ("fico_range_low", "i
 FIGURE_CAPTIONS = {
     "figures/curvas_pr_validacao.png": "Curvas precisão × recall dos três modelos na validação (critério de seleção: AP).",
     "figures/curvas_roc_validacao.png": "Curvas ROC dos três modelos na validação.",
-    "figures/calibracao_validacao.png": "Calibração na validação: pontos sobre a diagonal = probabilidade bem calibrada.",
+    "figures/calibracao_validacao.png": "Calibração na validação: pontos sobre a diagonal indicam probabilidade bem calibrada.",
     "figures/limiar_validacao.png": "Precision, recall e F2 por limiar na validação; a linha vertical é o limiar escolhido.",
     "figures/matriz_confusao_teste.png": "Matriz de confusão no teste reservado (avaliado uma única vez).",
     "figures/distribuicao_scores_teste.png": "Distribuição das probabilidades no teste, separada pela classe real.",
-    "figures/importancia_atributos.png": "Importância GLOBAL por permutação (validação) — não explica casos individuais.",
+    "figures/importancia_atributos.png": "Importância global por permutação, medida na validação. Não explica casos individuais.",
     "figures/estabilidade_temporal.png": "AP e taxa real de Charged Off por mês de emissão (validação e teste).",
     "figures/calibracao_teste.png": "Calibração do modelo escolhido no teste.",
 }
+PARTITION_LABELS = {"treino": "Treino", "validacao": "Validação", "teste": "Teste"}
+MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
+
+# Paleta igual à de .streamlit/config.toml. Bordas finas e quentes, sem sombras.
+STYLE = """
+<style>
+:root {
+  --lr-paper: #f7f5f0; --lr-paper-2: #ece8df; --lr-ink: #23262b; --lr-graphite: #66645e;
+  --lr-faint: #8b887f; --lr-rule: #d9d3c6; --lr-pen: #1f4e8c; --lr-stamp: #a8322a; --lr-ledger: #2e6b41;
+  --lr-serif: "Source Serif", "Source Serif 4", Georgia, serif;
+}
+[data-testid="stMainBlockContainer"] { padding-top: 4rem; }
+.lr-eyebrow { font-size: .72rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--lr-graphite); margin-bottom: .4rem; }
+.lr-masthead { display: flex; justify-content: space-between; align-items: flex-end; gap: .5rem 1.5rem;
+  flex-wrap: wrap; padding-bottom: .9rem; border-bottom: 1px solid var(--lr-rule); }
+.lr-title { font-family: var(--lr-serif); font-size: 2rem; font-weight: 600; line-height: 1.1;
+  letter-spacing: -.015em; color: var(--lr-ink); }
+.lr-byline { font-size: .8rem; line-height: 1.45; color: var(--lr-graphite); }
+.lr-lead { font-size: .95rem; color: var(--lr-graphite); margin-bottom: .75rem; text-wrap: pretty; }
+.lr-hero-label { font-size: .9rem; color: var(--lr-graphite); }
+.lr-hero { font-family: var(--lr-serif); font-size: 3.6rem; font-weight: 600; line-height: 1;
+  letter-spacing: -.02em; font-variant-numeric: lining-nums tabular-nums; color: var(--lr-ink); margin: .3rem 0 .9rem; }
+.lr-verdict { font-size: 1rem; color: var(--lr-ink); margin-bottom: .35rem; }
+.lr-stamp { display: inline-block; margin-left: .4rem; padding: .1rem .5rem; border: 2px solid currentColor;
+  border-radius: 3px; font-size: .78rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.lr-stamp.co { color: var(--lr-stamp); }
+.lr-stamp.fp { color: var(--lr-ledger); }
+.lr-text { font-size: .9rem; line-height: 1.55; color: var(--lr-graphite); text-wrap: pretty; }
+.lr-ruler { margin: 2.1rem 0 1.1rem; }
+.lr-track { position: relative; height: 8px; border-radius: 2px; background: var(--lr-paper-2);
+  box-shadow: inset 0 0 0 1px var(--lr-rule); }
+.lr-zone { position: absolute; top: 0; bottom: 0; right: 0; border-radius: 0 2px 2px 0;
+  background: repeating-linear-gradient(135deg, rgba(168, 50, 42, .38) 0 2px, transparent 2px 6px); }
+.lr-cut { position: absolute; top: -14px; bottom: -6px; width: 2px; margin-left: -1px; background: var(--lr-ink); }
+.lr-cut span { position: absolute; bottom: 100%; left: 5px; margin-bottom: -.2rem; white-space: nowrap;
+  font-size: .72rem; font-weight: 600; color: var(--lr-ink); }
+.lr-avg { position: absolute; top: -5px; bottom: -5px; margin-left: -1px; border-left: 2px dotted var(--lr-graphite); }
+.lr-mark { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%;
+  transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--lr-paper); }
+.lr-mark.co { background: var(--lr-stamp); }
+.lr-mark.fp { background: var(--lr-ledger); }
+.lr-ticks { position: relative; height: 1rem; margin-top: .4rem; font-size: .7rem; color: var(--lr-faint);
+  font-variant-numeric: tabular-nums; }
+.lr-ticks span { position: absolute; transform: translateX(-50%); }
+.lr-ticks span:first-child { transform: none; }
+.lr-ticks span:last-child { transform: translateX(-100%); }
+.lr-legend { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; margin-top: .7rem; font-size: .75rem;
+  color: var(--lr-graphite); }
+.lr-legend i { display: inline-block; margin-right: .4rem; vertical-align: -1px; }
+.lr-sw-mark { width: 10px; height: 10px; border-radius: 50%; }
+.lr-sw-mark.co { background: var(--lr-stamp); }
+.lr-sw-mark.fp { background: var(--lr-ledger); }
+.lr-sw-cut { width: 2px; height: 12px; background: var(--lr-ink); }
+.lr-sw-avg { width: 0; height: 12px; border-left: 2px dotted var(--lr-graphite); }
+.lr-sw-zone { width: 14px; height: 10px; box-shadow: inset 0 0 0 1px var(--lr-rule);
+  background: repeating-linear-gradient(135deg, rgba(168, 50, 42, .5) 0 2px, transparent 2px 5px); }
+.lr-aside { border-left: 2px solid var(--lr-rule); padding: .15rem 0 .15rem .8rem; margin: .9rem 0;
+  font-size: .85rem; line-height: 1.5; color: var(--lr-graphite); }
+.lr-section { margin-top: 1.9rem; padding-top: 1.1rem; border-top: 1px solid var(--lr-rule); }
+.lr-rank { margin: 0 0 .5rem 1.15rem; padding: 0; font-size: .92rem; line-height: 1.6; color: var(--lr-ink); }
+.lr-memo { margin: .4rem 0 .25rem; padding: .2rem 0 .2rem 1rem; border-left: 2px solid var(--lr-pen);
+  font-family: var(--lr-serif); font-size: 1.06rem; line-height: 1.62; color: var(--lr-ink); text-wrap: pretty; }
+.lr-memo-meta { font-size: .75rem; line-height: 1.5; color: var(--lr-graphite); padding-left: 1.1rem; }
+.lr-empty { margin-top: 1.4rem; padding: 2.4rem 1.5rem; border: 1px dashed var(--lr-rule); border-radius: 3px;
+  text-align: center; font-family: var(--lr-serif); font-style: italic; font-size: 1.02rem; color: var(--lr-graphite); }
+.lr-ficha dl { display: grid; grid-template-columns: auto 1fr; gap: .4rem .9rem; margin: 0; font-size: .86rem; }
+.lr-ficha dt { color: var(--lr-graphite); }
+.lr-ficha dd { margin: 0; color: var(--lr-ink); font-variant-numeric: tabular-nums; }
+.lr-dot { display: inline-block; width: 7px; height: 7px; margin-right: .35rem; border-radius: 50%; vertical-align: 1px; }
+.lr-dot.ok { background: var(--lr-ledger); }
+.lr-dot.off { background: var(--lr-stamp); }
+.lr-footnote { font-size: .75rem; line-height: 1.5; color: var(--lr-faint); }
+</style>
+"""
 
 
 def _mtime(path) -> float:
@@ -93,6 +181,19 @@ def int_pt(value) -> str:
     return f"{value:,}".replace(",", ".") if isinstance(value, int) else "?"
 
 
+def month_pt(iso_date: str | None) -> str:
+    try:
+        year, month = str(iso_date)[:7].split("-")
+        return f"{MONTHS[int(month) - 1]}/{year}"
+    except (ValueError, IndexError):
+        return "?"
+
+
+def html_block(markup: str):
+    """HTML próprio numa linha só: o Markdown do Streamlit trataria recuos como bloco de código."""
+    st.markdown(" ".join(line.strip() for line in markup.splitlines() if line.strip()), unsafe_allow_html=True)
+
+
 def styled_pt(frame: pd.DataFrame, precision: int = 4, formats: dict | None = None):
     """Exibe números em pt-BR (vírgula decimal, ponto de milhar) sem perder a ordenação numérica."""
     style = frame.style.format(precision=precision, decimal=",", thousands=".", na_rep="—")
@@ -100,9 +201,6 @@ def styled_pt(frame: pd.DataFrame, precision: int = 4, formats: dict | None = No
         formats = {col: fmt for col, fmt in formats.items() if col in frame.columns}
         style = style.format(formats, subset=list(formats), decimal=",", thousands=".", na_rep="—")
     return style
-
-
-PARTITION_LABELS = {"treino": "Treino", "validacao": "Validação", "teste": "Teste"}
 
 
 def metric_table(values: dict, references: dict | None = None) -> pd.DataFrame:
@@ -132,7 +230,7 @@ def numeric_widget(col: str):
     default = stats.get("mediana", lower)
     cast = int if is_int else float
     return st.number_input(
-        FEATURE_LABELS[col], min_value=cast(lower), max_value=cast(math.ceil(upper)),
+        FORM_LABELS[col], min_value=cast(lower), max_value=cast(math.ceil(upper)),
         value=cast(round(default)) if is_int else float(default), step=cast(STEPS[col]),
         format=FORMATS.get(col), help=FIELD_HELP[col], key=f"in_{col}",
     )
@@ -143,15 +241,55 @@ def category_widget(col: str):
     if schema.get("ausentes_categoricos", {}).get(col, 0) > 0:
         options.append(MISSING_LABEL)
     return st.selectbox(
-        FEATURE_LABELS[col], options, index=0, help=FIELD_HELP[col], key=f"in_{col}",
+        FORM_LABELS[col], options, index=0, help=FIELD_HELP[col], key=f"in_{col}",
         format_func=lambda v: MISSING_LABEL if v == MISSING_LABEL else category_label(col, v),
     )
 
 
+def risk_ruler(probability: float, threshold: float, base_rate: float | None) -> str:
+    """Régua 0–50% (ou 0–100% se a probabilidade passar de 50%) com limiar, taxa média e a proposta."""
+    top = 0.5 if probability <= 0.5 else 1.0
+    step = 0.1 if top == 0.5 else 0.2
+    kind = "co" if probability >= threshold else "fp"
+
+    def x(value: float) -> float:
+        return round(min(max(value / top, 0.0), 1.0) * 100, 2)
+
+    ticks = "".join(f'<span style="left:{x(i * step)}%">{round(i * step * 100)}%</span>'
+                    for i in range(round(top / step) + 1))
+    avg = f'<div class="lr-avg" style="left:{x(base_rate)}%"></div>' if base_rate is not None else ""
+    avg_legend = (f'<span><i class="lr-sw-avg"></i>taxa média de Charged Off no teste ({percent_pt(base_rate)})</span>'
+                  if base_rate is not None else "")
+    label = (f"Régua de risco: probabilidade {percent_pt(probability)}, limiar {percent_pt(threshold)}"
+             + (f", taxa média {percent_pt(base_rate)}" if base_rate is not None else ""))
+    return f"""
+    <div class="lr-ruler" role="img" aria-label="{label}">
+      <div class="lr-track">
+        <div class="lr-zone" style="left:{x(threshold)}%"></div>
+        {avg}
+        <div class="lr-cut" style="left:{x(threshold)}%"><span>limiar {percent_pt(threshold)}</span></div>
+        <div class="lr-mark {kind}" style="left:{x(probability)}%"></div>
+      </div>
+      <div class="lr-ticks">{ticks}</div>
+      <div class="lr-legend">
+        <span><i class="lr-sw-mark {kind}"></i>esta proposta</span>
+        <span><i class="lr-sw-zone"></i>faixa classificada como Charged Off</span>
+        {avg_legend}
+      </div>
+    </div>"""
+
+
 # --------------------------------------------------------------------------------------
-st.title("LendingRisk AI")
-st.caption("Sistema acadêmico de análise de risco de empréstimos • CARCDSI — IFSP Caraguatatuba • "
-           "Hyan da Cunha Ferreira Inácio e Luan Ibanhez de Almeida")
+st.html(STYLE)
+html_block("""
+<div class="lr-masthead">
+  <div>
+    <div class="lr-eyebrow">CARCDSI · IFSP Caraguatatuba · projeto final</div>
+    <div class="lr-title" role="heading" aria-level="1">LendingRisk AI</div>
+  </div>
+  <div class="lr-byline">Hyan da Cunha Ferreira Inácio<br>Luan Ibanhez de Almeida</div>
+</div>
+""")
 
 try:
     metrics = cached_metrics(str(config.METRICS_PATH), _mtime(config.METRICS_PATH))
@@ -166,28 +304,34 @@ threshold = float(metrics["limiar"])
 schema = metrics.get("esquema_entrada", {})
 test_metrics = metrics["metricas_teste"]
 partitions = metrics.get("particoes", {})
+base_rate = partitions.get("teste", {}).get("taxa_charged_off")
 for warning in version_warnings(metrics):
     st.warning(warning)
 
 with st.sidebar:
-    st.header("Modelo em uso")
-    st.markdown(f"**{metrics['modelo_escolhido']}**, escolhido pela maior AP na validação.")
-    st.markdown(f"Limiar de classificação: **{percent_pt(threshold)}** (máximo F2 na validação).")
-    if partitions:
-        st.markdown(f"Dados de treino: {partitions['treino']['inicio'][:7]} a {partitions['treino']['fim'][:7]}; "
-                    f"teste: {partitions['teste']['inicio'][:7]} a {partitions['teste']['fim'][:7]}.")
-    st.divider()
-    st.header("LLM local")
     status = cached_ollama_status()
-    if status["ok"]:
-        st.success(status["mensagem"], icon="✅")
-    else:
-        st.warning(status["mensagem"], icon="⚠️")
-    if st.button("Verificar Ollama novamente"):
+    train_part, test_part = partitions.get("treino", {}), partitions.get("teste", {})
+    llm_state = ('<span class="lr-dot ok"></span>Ollama ativo' if status["ok"]
+                 else '<span class="lr-dot off"></span>indisponível')
+    html_block(f"""
+    <div class="lr-ficha">
+      <div class="lr-eyebrow">Ficha técnica</div>
+      <dl>
+        <dt>Classificador</dt><dd>{html.escape(metrics['modelo_escolhido'])}</dd>
+        <dt>Seleção</dt><dd>maior AP na validação</dd>
+        <dt>Limiar</dt><dd>{percent_pt(threshold)} (máximo F2)</dd>
+        <dt>Treino</dt><dd>{month_pt(train_part.get('inicio'))} a {month_pt(train_part.get('fim'))}</dd>
+        <dt>Teste</dt><dd>{month_pt(test_part.get('inicio'))} a {month_pt(test_part.get('fim'))}</dd>
+        <dt>LLM</dt><dd>{html.escape(config.LLM_MODEL)}<br>{llm_state}</dd>
+      </dl>
+    </div>
+    """)
+    if not status["ok"]:
+        st.caption(status["mensagem"])
+    if st.button("Verificar Ollama de novo", type="tertiary"):
         cached_ollama_status.clear()
         st.rerun()
-    st.divider()
-    st.caption("Protótipo acadêmico. Não use para aprovar ou recusar crédito de verdade.")
+    html_block('<div class="lr-footnote">Protótipo acadêmico. Não use para aprovar ou recusar crédito de verdade.</div>')
 
 tab_simulate, tab_performance, tab_data = st.tabs(
     ["Simular empréstimo", "Desempenho dos modelos", "Dados e metodologia"]
@@ -195,112 +339,130 @@ tab_simulate, tab_performance, tab_data = st.tabs(
 
 # ---------------------------------- Simulação -----------------------------------------
 with tab_simulate:
-    st.markdown("Informe as características de um pedido de empréstimo. O classificador estima a "
-                "probabilidade de o empréstimo terminar como **Charged Off** (baixado como perda), "
-                "segundo o padrão histórico do Lending Club.")
-    with st.form("loan_form"):
-        values = {}
-        for pair in FORM_ROWS:  # uma linha por par: no celular, a ordem lógica é mantida
-            for target, col in zip(st.columns(2), pair):
-                with target:
-                    values[col] = numeric_widget(col) if col in NUMERIC_FEATURES else category_widget(col)
-        submitted = st.form_submit_button("Estimar risco", type="primary")
+    proposal, verdict = st.columns([1, 1], gap="large")
+    with proposal:
+        html_block('<div class="lr-eyebrow">Proposta</div>'
+                   '<div class="lr-lead">Dados do pedido, nos moldes do cadastro do Lending Club. '
+                   'Os campos começam na mediana do treino.</div>')
+        with st.form("loan_form", border=False):
+            values = {}
+            for pair in FORM_ROWS:  # uma linha por par: no celular, a ordem lógica é mantida
+                for target, col in zip(st.columns(2), pair):
+                    with target:
+                        values[col] = numeric_widget(col) if col in NUMERIC_FEATURES else category_widget(col)
+            submitted = st.form_submit_button("Estimar risco", type="primary")
 
-    if submitted:
-        try:
-            record, input_warnings = validate_record(values, schema)
-            probability = predict_probability(model, record)
-            st.session_state["analysis"] = {
-                "id": time.time(), "record": record, "probability": probability,
-                "warnings": input_warnings, "display": format_record_pt(record),
-            }
-            st.session_state.pop("explanation", None)
-        except ValueError as exc:
-            st.session_state.pop("analysis", None)
-            st.error(f"Não foi possível calcular: {exc}")
-        except Exception as exc:  # erro inesperado do modelo: mostrar mensagem útil, não traceback
-            st.session_state.pop("analysis", None)
-            st.error(f"Erro inesperado ao calcular a previsão: {exc}. Verifique se o modelo foi treinado "
-                     "com a versão atual do código.")
+    with verdict:
+        if submitted:
+            try:
+                record, input_warnings = validate_record(values, schema)
+                probability = predict_probability(model, record)
+                st.session_state["analysis"] = {
+                    "id": time.time(), "record": record, "probability": probability,
+                    "warnings": input_warnings, "display": format_record_pt(record),
+                }
+                st.session_state.pop("explanation", None)
+            except ValueError as exc:
+                st.session_state.pop("analysis", None)
+                st.error(f"Não foi possível calcular: {exc}")
+            except Exception as exc:  # erro inesperado do modelo: mostrar mensagem útil, não traceback
+                st.session_state.pop("analysis", None)
+                st.error(f"Erro inesperado ao calcular a previsão: {exc}. Verifique se o modelo foi treinado "
+                         "com a versão atual do código.")
 
-    analysis = st.session_state.get("analysis")
-    if analysis:
-        probability = analysis["probability"]
-        above = probability >= threshold
-        st.subheader("Resultado do classificador")
-        for warning in analysis["warnings"]:
-            st.warning(warning)
-        test_share_60 = partitions.get("teste", {}).get("proporcao_60_meses")
-        if analysis["record"].get("term") == "60 months" and test_share_60 == 0:
-            st.info("Empréstimos de **60 meses** só aparecem no treino (safras até 2013, com prazo já "
-                    "encerrado). O teste contém apenas empréstimos de 36 meses, então o desempenho do "
-                    "modelo para 60 meses **não foi avaliado**.", icon="ℹ️")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Probabilidade estimada de Charged Off", percent_pt(probability))
-        m2.metric("Limiar de classificação", percent_pt(threshold))
-        if partitions:
-            m3.metric("Taxa média de Charged Off no período de teste", percent_pt(partitions["teste"]["taxa_charged_off"]))
-        if above:
-            st.error("**Classe prevista: Charged Off** — a probabilidade ficou **acima** do limiar. "
-                     "O perfil se parece com o de empréstimos que terminaram como perda.", icon="🔺")
+        analysis = st.session_state.get("analysis")
+        if not analysis:
+            html_block('<div class="lr-eyebrow">Parecer</div>'
+                       '<div class="lr-empty">Preencha a proposta e clique em <b>Estimar risco</b>.<br>'
+                       'O parecer do classificador aparece aqui.</div>')
         else:
-            st.success("**Classe prevista: Fully Paid** — a probabilidade ficou **abaixo** do limiar.", icon="🔹")
-        st.caption(
-            f"Com este limiar, no teste reservado o modelo sinalizou {percent_pt(test_metrics['recall'])} dos "
-            f"Charged Off reais (recall), e {percent_pt(test_metrics['precision'])} dos casos sinalizados eram "
-            "de fato Charged Off (precision). O limiar privilegia encontrar casos de risco, aceitando muitos "
-            "alarmes falsos. A probabilidade é uma estimativa do modelo — veja a calibração na aba "
-            "'Desempenho dos modelos' — e não uma garantia."
-        )
-        with st.expander("Dados enviados ao modelo"):
-            st.table(pd.DataFrame({"Campo": list(analysis["display"]), "Valor": list(analysis["display"].values())}))
+            probability = analysis["probability"]
+            above = probability >= threshold
+            kind, label = ("co", "Charged Off") if above else ("fp", "Fully Paid")
+            reading = (f"A probabilidade ficou acima do limiar de {percent_pt(threshold)}. O perfil se parece "
+                       "com o de empréstimos que terminaram como perda." if above else
+                       f"A probabilidade ficou abaixo do limiar de {percent_pt(threshold)}. Pelo critério "
+                       "adotado, não há sinal de risco elevado.")
+            html_block(f"""
+            <div class="lr-eyebrow">Parecer do classificador · {html.escape(metrics['modelo_escolhido'])}</div>
+            <div class="lr-hero-label">Probabilidade estimada de Charged Off</div>
+            <div class="lr-hero">{percent_pt(probability)}</div>
+            <div class="lr-verdict">Classe prevista <span class="lr-stamp {kind}">{label}</span></div>
+            <div class="lr-text">{reading}</div>
+            {risk_ruler(probability, threshold, base_rate)}
+            """)
+            for warning in analysis["warnings"]:
+                st.warning(warning)
+            if analysis["record"].get("term") == "60 months" and partitions.get("teste", {}).get("proporcao_60_meses") == 0:
+                html_block('<div class="lr-aside"><b>Prazo de 60 meses.</b> Esses empréstimos só aparecem no '
+                           'treino (safras até 2013). O teste tem apenas empréstimos de 36 meses, então o '
+                           'desempenho do modelo para 60 meses não foi avaliado.</div>')
+            html_block(f"""
+            <div class="lr-aside">No teste reservado, este limiar encontrou {percent_pt(test_metrics['recall'])}
+            dos Charged Off reais, mas só {percent_pt(test_metrics['precision'])} dos casos sinalizados eram de
+            fato Charged Off. Ele foi escolhido para deixar passar poucos casos de risco, à custa de muitos
+            alarmes falsos. A probabilidade é uma estimativa, não uma garantia.</div>
+            """)
+            with st.expander("Dados enviados ao modelo"):
+                st.table(pd.DataFrame({"Campo": list(analysis["display"]),
+                                       "Valor": list(analysis["display"].values())}).set_index("Campo"))
 
-        importance = metrics.get("importancia_global", [])
-        top_features = [FEATURE_LABELS.get(row["atributo"], row["atributo"]) for row in importance[:5]]
-        if top_features:
-            st.markdown("**Atributos mais importantes para o modelo em geral** (importância global): "
-                        + ", ".join(top_features) + ".")
-            st.caption("Importância global indica o que o modelo mais usa em média. Ela NÃO indica quais "
-                       "atributos causaram ou pesaram mais nesta previsão individual.")
-            if partitions.get("validacao", {}).get("proporcao_60_meses") == 0:
-                st.caption("O prazo aparece com importância zero porque a validação (onde a importância é "
-                           "medida) só contém empréstimos de 36 meses; isso não prova que o prazo seja irrelevante.")
+            importance = metrics.get("importancia_global", [])
+            top_features = [FEATURE_LABELS.get(row["atributo"], row["atributo"]) for row in importance[:5]]
+            if top_features:
+                term_note = (" O prazo fica com importância zero porque a validação só tem empréstimos de 36 meses."
+                             if partitions.get("validacao", {}).get("proporcao_60_meses") == 0 else "")
+                items = "".join(f"<li>{html.escape(name)}</li>" for name in top_features)
+                html_block(f"""
+                <div class="lr-section">
+                  <div class="lr-eyebrow">O que o modelo mais usa, em geral</div>
+                  <ol class="lr-rank">{items}</ol>
+                  <div class="lr-text">Importância global, medida na validação. Não diz o que pesou nesta
+                  proposta específica.{term_note}</div>
+                </div>
+                """)
 
-        st.subheader("Explicação em linguagem natural")
-        st.caption(f"Gerada localmente pelo modelo {config.LLM_MODEL} via Ollama. A LLM recebe a probabilidade "
-                   "já calculada e apenas a explica; ela não altera o resultado acima.")
-        if st.button("Explicar com LLM local (Ollama)"):
-            with st.spinner("Gerando explicação local (na CPU pode levar até um minuto)..."):
-                started = time.time()
-                try:
-                    result = explain_checked(probability, threshold, analysis["display"], top_features,
-                                             model_name=metrics["modelo_escolhido"])
-                    st.session_state["explanation"] = {
-                        "analysis_id": analysis["id"], "text": result["texto"], "error": None,
-                        "warnings": result["avisos"], "attempts": result["tentativas"],
-                        "seconds": round(time.time() - started, 1),
-                    }
-                except LLMIndisponivel as exc:
-                    st.session_state["explanation"] = {"analysis_id": analysis["id"], "error": str(exc)}
-        explanation = st.session_state.get("explanation")
-        if explanation and explanation["analysis_id"] == analysis["id"]:
-            if explanation["error"]:
-                st.warning(f"LLM indisponível: {explanation['error']} A previsão acima continua válida.")
-            else:
-                st.info(explanation["text"])
-                attempts = explanation.get("attempts", 1)
-                seconds = f"{explanation['seconds']:.1f}".replace(".", ",")
-                st.caption(f"{CLOSING_SENTENCE} Texto gerado em {seconds} s"
-                           + (f" ({attempts} tentativas: a primeira falhou na verificação automática)." if attempts > 1 else "."))
-                if explanation["warnings"]:
-                    st.warning("A verificação automática encontrou possíveis inconsistências no texto da LLM "
-                               "(os valores corretos são os do classificador, acima):\n\n- "
-                               + "\n- ".join(explanation["warnings"]))
+            html_block(f"""
+            <div class="lr-section">
+              <div class="lr-eyebrow">Explicação em texto</div>
+              <div class="lr-text">Escrita pela LLM local ({html.escape(config.LLM_MODEL)}, via Ollama) a partir
+              do resultado acima. Ela não altera o cálculo.</div>
+            </div>
+            """)
+            if st.button("Explicar com LLM local (Ollama)"):
+                with st.spinner("Gerando a explicação na CPU. Pode levar até um minuto."):
+                    started = time.time()
+                    try:
+                        result = explain_checked(probability, threshold, analysis["display"], top_features,
+                                                 model_name=metrics["modelo_escolhido"])
+                        st.session_state["explanation"] = {
+                            "analysis_id": analysis["id"], "text": result["texto"], "error": None,
+                            "warnings": result["avisos"], "attempts": result["tentativas"],
+                            "seconds": round(time.time() - started, 1),
+                        }
+                    except LLMIndisponivel as exc:
+                        st.session_state["explanation"] = {"analysis_id": analysis["id"], "error": str(exc)}
+            explanation = st.session_state.get("explanation")
+            if explanation and explanation["analysis_id"] == analysis["id"]:
+                if explanation["error"]:
+                    st.warning(f"LLM indisponível: {explanation['error']} A previsão acima continua válida.")
+                else:
+                    attempts = explanation.get("attempts", 1)
+                    seconds = f"{explanation['seconds']:.1f}".replace(".", ",")
+                    retry = " · 2ª tentativa (a 1ª falhou na verificação automática)" if attempts > 1 else ""
+                    text = html.escape(explanation["text"]).replace("\n", "<br>")
+                    html_block(f'<div class="lr-memo">{text}</div>'
+                               f'<div class="lr-memo-meta">{html.escape(config.LLM_MODEL)} · gerado em {seconds} s'
+                               f'{retry}. {CLOSING_SENTENCE}</div>')
+                    if explanation["warnings"]:
+                        st.warning("A verificação automática encontrou possíveis inconsistências no texto da LLM "
+                                   "(os valores corretos são os do classificador, acima):\n\n- "
+                                   + "\n- ".join(explanation["warnings"]))
 
 # --------------------------------- Desempenho -----------------------------------------
 with tab_performance:
-    st.markdown(f"Modelo escolhido: **{metrics['modelo_escolhido']}** — maior Average Precision na "
-                f"validação. Limiar: **{percent_pt(threshold)}** (máximo F2 na validação). "
+    st.markdown(f"Modelo escolhido: **{metrics['modelo_escolhido']}**, o de maior Average Precision na "
+                f"validação. Limiar: **{percent_pt(threshold)}**, o que maximiza o F2 na validação. "
                 "O conjunto de teste foi usado uma única vez, depois dessas escolhas.")
     st.subheader("Métricas no teste reservado")
     st.dataframe(styled_pt(metric_table(test_metrics, metrics.get("referencias_teste"))), hide_index=True,
@@ -339,20 +501,20 @@ with tab_data:
     st.subheader("Fonte e preparação dos dados")
     period = dataset.get("periodo_emissao_arquivo") or ["?", "?"]
     st.markdown(
-        f"- **Arquivo:** `{dataset.get('arquivo', '?')}` — Lending Club, empréstimos aceitos.\n"
+        f"- **Arquivo:** `{dataset.get('arquivo', '?')}` (Lending Club, empréstimos aceitos).\n"
         f"- **SHA-256:** `{dataset.get('sha256', 'não calculado')}`\n"
         f"- **Linhas lidas:** {int_pt(dataset.get('linhas_lidas'))}; com desfecho final: "
         f"{int_pt(dataset.get('linhas_com_desfecho_final'))}; usadas no experimento: "
         f"{int_pt(dataset.get('linhas_utilizadas'))}.\n"
         "- **Alvo:** 0 = Fully Paid (quitado), 1 = Charged Off (baixado como perda). Os demais status "
         "(Current, Late, Default etc.) ficam fora por não terem desfecho final.\n"
-        f"- **Período de emissão no arquivo:** {period[0]} a {period[1]}"
+        f"- **Período de emissão no arquivo:** {month_pt(period[0])} a {month_pt(period[1])}"
     )
     maturity = dataset.get("filtro_maturidade", {})
     if maturity.get("ativo"):
         st.markdown(f"- **Filtro de maturidade:** só entram empréstimos cujo prazo contratual terminou até "
-                    f"{maturity.get('data_referencia')} ({int_pt(maturity.get('linhas_removidas'))} linhas "
-                    "sorteadas removidas). Isso evita que o período recente contenha apenas quem terminou cedo.")
+                    f"{month_pt(maturity.get('data_referencia'))} ({int_pt(maturity.get('linhas_removidas'))} "
+                    "linhas sorteadas removidas). Isso evita que o período recente contenha apenas quem terminou cedo.")
     sampling = dataset.get("amostragem", {})
     if sampling:
         fraction, cap = sampling.get("fracao"), sampling.get("max_linhas")
@@ -365,7 +527,7 @@ with tab_data:
         st.markdown("**Divisão temporal por data de emissão (`issue_d`)**")
         st.table(pd.DataFrame([
             {"Partição": PARTITION_LABELS.get(name, name), "Linhas": int_pt(part.get("linhas")),
-             "Início": part.get("inicio"), "Fim": part.get("fim"),
+             "Início": month_pt(part.get("inicio")), "Fim": month_pt(part.get("fim")),
              "Taxa de Charged Off": percent_pt(part["taxa_charged_off"]),
              "Proporção 60 meses": percent_pt(part["proporcao_60_meses"])}
             for name, part in partitions.items()
@@ -378,7 +540,8 @@ with tab_data:
     st.subheader("Atributos usados")
     st.markdown("Somente informações conhecidas no momento do pedido. Colunas posteriores à concessão "
                 "(pagamentos, recuperações, FICO mais recente) foram excluídas para evitar vazamento de dados.")
-    st.table(pd.DataFrame({"Atributo": list(FEATURE_LABELS), "Descrição": list(FEATURE_LABELS.values())}))
+    st.table(pd.DataFrame({"Atributo": list(FEATURE_LABELS), "Descrição": list(FEATURE_LABELS.values())})
+             .set_index("Atributo"))
 
     st.subheader("Limitações")
     st.markdown(

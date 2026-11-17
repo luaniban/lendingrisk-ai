@@ -2,6 +2,7 @@
 
 O Ollama é simulado (mock) para o teste não depender de rede nem de hardware.
 """
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,6 +23,16 @@ def _fake_tags(*_, **__):
     response.json.return_value = {"models": [{"name": config.LLM_MODEL}]}
     response.raise_for_status.return_value = None
     return response
+
+
+def _markdown(at) -> str:
+    return "\n".join(m.value for m in at.markdown)
+
+
+def _probability(at):
+    """Valor exibido no destaque do parecer (ex.: '10,4%'), ou None se não há parecer na tela."""
+    match = re.search(r'class="lr-hero">([\d,]+%)<', _markdown(at))
+    return match.group(1) if match else None
 
 
 class AppWithoutModelTests(unittest.TestCase):
@@ -79,29 +90,34 @@ class AppWithModelTests(unittest.TestCase):
         at = AppTest.from_file(APP, default_timeout=60).run()
         self.assertFalse(at.exception)
         self.assertEqual([t.label for t in at.tabs], ["Simular empréstimo", "Desempenho dos modelos", "Dados e metodologia"])
-        self.assertTrue(any("Ollama ativo" in s.value for s in at.success))
+        self.assertIn("Ollama ativo", "\n".join(m.value for m in at.sidebar.markdown))
+        self.assertIsNone(_probability(at))  # antes de estimar, só o estado vazio
+        self.assertIn("Preencha a proposta", _markdown(at))
 
     def test_previsao_pelo_formulario(self):
         at = AppTest.from_file(APP, default_timeout=60).run()
         at = self._submit(at, loan_amnt=12000.0, dti=25.0)
         self.assertFalse(at.exception)
-        labels = [m.label for m in at.metric]
-        self.assertIn("Probabilidade estimada de Charged Off", labels)
-        value = next(m.value for m in at.metric if m.label == "Probabilidade estimada de Charged Off")
-        self.assertTrue(value.endswith("%"))
-        self.assertTrue(any("Classe prevista" in x.value for x in list(at.error) + list(at.success)))
+        page = _markdown(at)
+        self.assertIn("Probabilidade estimada de Charged Off", page)
+        self.assertIsNotNone(_probability(at))
+        self.assertRegex(page, r'Classe prevista <span class="lr-stamp (co|fp)">(Charged Off|Fully Paid)</span>')
+        self.assertIn('class="lr-ruler"', page)
 
     def test_explicacao_llm_e_falha_do_ollama(self):
         at = AppTest.from_file(APP, default_timeout=60).run()
         at = self._submit(at)
-        probability = next(m.value for m in at.metric if m.label == "Probabilidade estimada de Charged Off")
+        probability = _probability(at)
         reply = mock.Mock(status_code=200)
-        reply.json.return_value = {"response": f"A probabilidade estimada é {probability}. {'x' * 10}"}
+        reply.json.return_value = {"response": f"A probabilidade estimada é {probability}. <b>x</b>"}
         with mock.patch("src.llm.requests.post", return_value=reply):
             button = next(b for b in at.button if "Explicar com LLM" in b.label)
             at = button.click().run()
         self.assertFalse(at.exception)
-        self.assertTrue(any(probability in i.value for i in at.info))
+        memo = re.search(r'class="lr-memo">(.*?)</div>', _markdown(at))
+        self.assertIsNotNone(memo)
+        self.assertIn(probability, memo.group(1))
+        self.assertIn("&lt;b&gt;", memo.group(1))  # texto da LLM é escapado, não vira HTML
 
         import requests
         with mock.patch("src.llm.requests.post", side_effect=requests.exceptions.ConnectionError()):
@@ -110,7 +126,7 @@ class AppWithModelTests(unittest.TestCase):
         self.assertFalse(at.exception)
         self.assertTrue(any("LLM indisponível" in w.value for w in at.warning))
         # a previsão continua na tela mesmo com a LLM fora do ar
-        self.assertIn("Probabilidade estimada de Charged Off", [m.label for m in at.metric])
+        self.assertEqual(_probability(at), probability)
 
 
 if __name__ == "__main__":

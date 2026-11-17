@@ -69,7 +69,9 @@ humana, não como decisão. A análise completa, incluindo subgrupos e limitaç�
 
 ```text
 lendingrisk-ai/
-├── app.py                  # interface Streamlit
+├── app.py                  # interface Streamlit (proposta ao lado do parecer)
+├── .streamlit/config.toml  # tema da interface (cores e fontes; funciona offline)
+├── PENDENCIAS.md           # o que ainda falta fazer
 ├── src/
 │   ├── config.py           # atributos, alvo, caminhos, rótulos em português, Ollama
 │   ├── download.py         # baixa o dataset e confere o SHA-256
@@ -79,7 +81,8 @@ lendingrisk-ai/
 │   ├── figures.py          # gráficos PNG
 │   ├── training.py         # treino, seleção, teste único e artefatos
 │   ├── inference.py        # validação de artefatos/entradas para a interface
-│   └── llm.py              # integração com o Ollama + verificação de consistência
+│   ├── llm.py              # integração com o Ollama + verificação de consistência
+│   └── llm_demo.py         # demonstração documentada da LLM (perfis hipotéticos)
 ├── tests/                  # testes automatizados (dados sintéticos identificados)
 ├── data/                   # dataset local (não versionado)
 ├── models/                 # modelo treinado local (não versionado)

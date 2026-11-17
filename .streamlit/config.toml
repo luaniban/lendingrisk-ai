@@ -1,0 +1,34 @@
+# Tema do LendingRisk AI: papel e tinta de um dossiê de crédito.
+# As cores também aparecem como variáveis CSS (--lr-*) em app.py; mantenha as duas em sincronia.
+
+[client]
+# esconde o botão "Deploy" e as opções de desenvolvedor
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#1f4e8c"             # tinta de caneta azul: botões, foco, aba ativa
+backgroundColor = "#f7f5f0"          # papel
+secondaryBackgroundColor = "#ece8df" # campos e tabelas, um tom abaixo do papel
+textColor = "#23262b"                # tinta
+linkColor = "#1f4e8c"
+borderColor = "#d9d3c6"
+dataframeBorderColor = "#e3ded3"
+redColor = "#a8322a"                 # carimbo: Charged Off
+greenColor = "#2e6b41"               # livro-razão: Fully Paid
+blueColor = "#1f4e8c"
+font = "sans-serif"                  # Source Sans (embutida no Streamlit, funciona offline)
+headingFont = "serif"                # Source Serif (embutida)
+codeFont = "monospace"
+baseRadius = "0.2rem"
+buttonRadius = "0.2rem"
+headingFontWeights = 600
+headingFontSizes = ["2rem", "1.4rem", "1.15rem", "1rem", "0.9rem", "0.8rem"]
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#f7f5f0"
+secondaryBackgroundColor = "#ece8df"
