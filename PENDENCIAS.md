@@ -16,8 +16,9 @@ Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git
 
 ## Publicação e reprodutibilidade
 
-- [ ] **Adicionar o Hyan como colaborador** do repositório público
-  https://github.com/luaniban/lendingrisk-ai. Falta saber o usuário dele no GitHub.
+- [ ] **Hyan aceitar o convite de colaborador.** O convite (permissão de escrita) foi enviado
+  ao usuário `HyanFerreira` em 17/11/2026. Ele aceita pelo e-mail do GitHub ou em
+  https://github.com/luaniban/lendingrisk-ai/invitations.
 - [ ] **Testar a instalação em outra máquina**, de preferência no Windows do Hyan. As
   instruções do README para Windows não foram testadas.
 
