@@ -1,7 +1,7 @@
 # Pendências do LendingRisk AI
 
 Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git log`).
-Última revisão: 17/11/2026.
+Última revisão: 19/11/2026.
 
 ## Aguardando retorno do Luan
 
@@ -19,8 +19,19 @@ Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git
 - [ ] **Hyan aceitar o convite de colaborador.** O convite (permissão de escrita) foi enviado
   ao usuário `HyanFerreira` em 17/11/2026. Ele aceita pelo e-mail do GitHub ou em
   https://github.com/luaniban/lendingrisk-ai/invitations.
-- [ ] **Testar a instalação em outra máquina**, de preferência no Windows do Hyan. As
-  instruções do README para Windows não foram testadas.
+
+## Ambiente Windows do Hyan
+
+- [ ] **Instalar e testar o Ollama com `llama3.2:3b`.** Em 19/11/2026 o serviço não
+  estava acessível. Formulário, previsões e layout funcionam sem ele.
+
+Instalação Python validada em 19/11/2026: Python 3.12.16 em `.venv`, 78 testes
+aprovados, auditoria do CSV real, treino dos três modelos e simulação na interface.
+Os relatórios desta execução ficam em `.venv/relatorios-windows`, selecionados por
+`iniciar.ps1`. O XGBoost local teve AP de teste 0,24161 (oficial Linux: 0,24253), com
+o mesmo limiar de 9%. Os relatórios oficiais foram preservados. Logs locais em
+`.venv/testes-windows.log`, `.venv/auditoria-windows.log`, `.venv/treino-windows.log`
+e `.venv/verificacao-app-real.log`.
 
 ## Melhorias opcionais
 
