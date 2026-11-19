@@ -5,7 +5,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data" / "lending_club"
 MODEL_DIR = ROOT / "models"
-REPORT_DIR = ROOT / "reports"
+# Permite testar um modelo local com seus próprios relatórios, preservando os oficiais.
+REPORT_DIR = Path(os.environ.get("LENDINGRISK_REPORT_DIR", str(ROOT / "reports")))
 FIGURES_DIR = REPORT_DIR / "figures"
 MODEL_PATH = MODEL_DIR / "modelo_risco.joblib"
 METRICS_PATH = REPORT_DIR / "metricas.json"

@@ -138,6 +138,44 @@ python -m pip install -r requirements-lock.txt
 Se a política do PowerShell bloquear a ativação, use `.\.venv\Scripts\python.exe` no
 lugar de `python` nos comandos abaixo. Assim não é preciso alterar políticas do sistema.
 
+### Desenvolvimento do layout no Windows
+
+Com a `.venv` preparada e `models/modelo_risco.joblib` gerado, execute da raiz:
+
+```powershell
+.\iniciar.ps1
+```
+
+Se a política do PowerShell bloquear scripts, execute os comandos diretamente:
+
+```powershell
+$env:LENDINGRISK_REPORT_DIR = "$PWD/.venv/relatorios-windows"
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1 --server.runOnSave true
+```
+
+Abra `http://127.0.0.1:8501`. Ao salvar alterações, o Streamlit recarrega a aplicação.
+O layout e o CSS estão em `app.py` (variável `STYLE`); cores e fontes também ficam em
+`.streamlit/config.toml`. Alterações de tema podem exigir reiniciar o servidor com
+`Ctrl+C` e executar o comando novamente. No VS Code, selecione o interpretador
+`.venv\Scripts\python.exe`.
+
+O arquivo de dependências fixa a biblioteca NCCL somente para Linux x86_64; ela não
+é necessária no Windows. O Ollama é opcional para testar o formulário e o layout:
+sem ele, somente a geração de explicações fica indisponível.
+
+Se o CSV estiver na pasta `data/lending_club/`, é possível
+reproduzir o treino local sem substituir os relatórios oficiais:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.training --data "data/lending_club/accepted_2007_to_2018Q4.csv" --report-dir .venv/relatorios-windows
+```
+
+Esse comando gera o modelo no caminho padrão e mantém as métricas locais dentro
+da `.venv`. O script `iniciar.ps1` seleciona esses relatórios quando disponíveis,
+usando `LENDINGRISK_REPORT_DIR`. Assim o app mostra as métricas do modelo local,
+inclusive quando há diferenças entre Windows e Linux, e os relatórios oficiais
+continuam preservados. Sem a variável, a aplicação usa `reports/`.
+
 ## Dataset
 
 ```bash
