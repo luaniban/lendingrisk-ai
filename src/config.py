@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT / "data"
+DATA_DIR = ROOT / "data" / "lending_club"
 MODEL_DIR = ROOT / "models"
 REPORT_DIR = ROOT / "reports"
 FIGURES_DIR = REPORT_DIR / "figures"

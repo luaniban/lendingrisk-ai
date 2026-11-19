@@ -8,7 +8,7 @@ O Kaggle exige login para baixar. Por isso, o script usa um espelho público
 do MESMO arquivo no Hugging Face (licença CC0), fixado numa revisão, e confere
 o SHA-256. O mesmo hash aparece em outros espelhos independentes do arquivo.
 Quem preferir o Kaggle pode baixar manualmente o ZIP, extrair o
-accepted_2007_to_2018Q4.csv.gz para data/ e treinar direto com o .csv.gz.
+accepted_2007_to_2018Q4.csv.gz para data/lending_club/ e treinar direto com o .csv.gz.
 """
 from __future__ import annotations
 

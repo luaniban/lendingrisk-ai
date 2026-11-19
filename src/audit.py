@@ -1,6 +1,6 @@
 """Auditoria do dataset real, SEM treinar modelos.
 
-Uso: python -m src.audit --data data/accepted_2007_to_2018Q4.csv
+Uso: python -m src.audit --data data/lending_club/accepted_2007_to_2018Q4.csv
 
 Mede: colunas, linhas, status de loan_status, período de emissão, valores
 ausentes, coortes por ano/prazo (quantos já têm desfecho e a taxa de Charged

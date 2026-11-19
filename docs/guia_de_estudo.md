@@ -113,7 +113,7 @@ que os números mostram, e saber explicar por quê faz parte do trabalho.
 
 - `accepted_2007_to_2018Q4.csv`: empréstimos aceitos de 2007 a 2018.
 - **1,68 GB**, **2.260.701 linhas** e **151 colunas**.
-- Fica em `data/` e **não** vai para o Git (é grande e a redistribuição não é nossa).
+- Fica em `data/lending_club/` e **não** vai para o Git (é grande e a redistribuição não é nossa).
 - O download (`python -m src.download`) confere o **SHA-256** do arquivo.
 
 > **SHA-256** é uma "impressão digital" do arquivo: um código de 64 caracteres

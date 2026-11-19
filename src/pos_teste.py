@@ -5,7 +5,7 @@ teste já foi visto, estes resultados são descritivos (análise de sensibilidad
 variante), e não substituem o resultado principal. Ver docs/experimentos.md, seção 5.
 
 Uso:
-  python -m src.pos_teste limiar --data data/accepted_2007_to_2018Q4.csv
+  python -m src.pos_teste limiar --data data/lending_club/accepted_2007_to_2018Q4.csv
   python -m src.pos_teste comparar
 """
 from __future__ import annotations

@@ -296,8 +296,8 @@ try:
     model = cached_model(str(config.MODEL_PATH), _mtime(config.MODEL_PATH))
 except ArtefatosInvalidos as exc:
     st.error(f"Modelo indisponível: {exc}")
-    st.markdown("Para gerar o modelo, coloque o dataset em `data/` e execute, na raiz do projeto:")
-    st.code("python -m src.training --data data/accepted_2007_to_2018Q4.csv")
+    st.markdown("Para gerar o modelo, coloque o dataset em `data/lending_club/` e execute, na raiz do projeto:")
+    st.code("python -m src.training --data data/lending_club/accepted_2007_to_2018Q4.csv")
     st.stop()
 
 threshold = float(metrics["limiar"])

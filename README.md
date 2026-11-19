@@ -89,7 +89,8 @@ lendingrisk-ai/
 │   ├── llm.py              # integração com o Ollama + verificação de consistência
 │   └── llm_demo.py         # demonstração documentada da LLM (perfis hipotéticos)
 ├── tests/                  # testes automatizados (dados sintéticos identificados)
-├── data/                   # dataset local (não versionado)
+├── data/                   # dados locais (não versionados)
+│   └── lending_club/        # CSVs aceitos e rejeitados; treino usa somente accepted_*
 ├── models/                 # modelo treinado local (não versionado)
 ├── reports/                # métricas, tabelas, gráficos e logs (versionados)
 ├── docs/                   # guia de estudo, registro de experimentos e roteiros de artigo/pitch
@@ -143,7 +144,7 @@ lugar de `python` nos comandos abaixo. Assim não é preciso alterar políticas 
 python -m src.download
 ```
 
-O comando baixa o `accepted_2007_to_2018Q4.csv` (1,68 GB) para `data/`, retoma
+O comando baixa o `accepted_2007_to_2018Q4.csv` (1,68 GB) para `data/lending_club/`, retoma
 downloads interrompidos e **confere o SHA-256**
 (`3eae03c28fd9d2e8a076ebeb73507e8d4d0f44d90500decdb0936e0933d1f36a`).
 
@@ -152,7 +153,7 @@ downloads interrompidos e **confere o SHA-256**
   Hugging Face (`codesignal/lending-club-loan-accepted`, CC0, revisão fixa), com o mesmo
   hash de outros dois espelhos independentes.
 - **Pelo Kaggle (manual):** baixe o ZIP, extraia **apenas**
-  `accepted_2007_to_2018Q4.csv.gz` para `data/` e use esse caminho nos comandos (o
+  `accepted_2007_to_2018Q4.csv.gz` para `data/lending_club/` e use esse caminho nos comandos (o
   `.csv.gz` é lido direto). **Não use** o arquivo de pedidos *rejeitados*.
 - O dataset nunca é enviado ao GitHub (`data/` está no `.gitignore`).
 
@@ -162,13 +163,13 @@ Todos os comandos rodam da raiz do projeto, com o ambiente ativado.
 
 ```bash
 # 1. Auditoria do dataset (sem treinar; cerca de 30 s)
-python -m src.audit --data data/accepted_2007_to_2018Q4.csv
+python -m src.audit --data data/lending_club/accepted_2007_to_2018Q4.csv
 
 # 2. Treinamento oficial: toda a população elegível, 3 modelos, teste único
-python -m src.training --data data/accepted_2007_to_2018Q4.csv
+python -m src.training --data data/lending_club/accepted_2007_to_2018Q4.csv
 
 # 2b. Execução rápida para máquinas modestas (amostra de 15%, teto de 150 mil linhas)
-python -m src.training --data data/accepted_2007_to_2018Q4.csv --fraction 0.15 --max-rows 150000
+python -m src.training --data data/lending_club/accepted_2007_to_2018Q4.csv --fraction 0.15 --max-rows 150000
 
 # 3. Interface
 python -m streamlit run app.py
@@ -204,9 +205,9 @@ modelo, o limiar nem `reports/metricas.json`. Os detalhes estão na seção 5 de
 
 ```bash
 # limiares alternativos (definidos na validação) e o efeito de cada um no teste
-.venv/bin/python -m src.pos_teste limiar --data data/accepted_2007_to_2018Q4.csv
+.venv/bin/python -m src.pos_teste limiar --data data/lending_club/accepted_2007_to_2018Q4.csv
 # variante v2: tempo de emprego "não informado" como categoria própria
-.venv/bin/python -m src.training --data data/accepted_2007_to_2018Q4.csv --missing-as-category \
+.venv/bin/python -m src.training --data data/lending_club/accepted_2007_to_2018Q4.csv --missing-as-category \
     --model-path models/modelo_v2_ausente_como_categoria.joblib \
     --report-dir reports/analises_pos_teste/v2_ausente_como_categoria
 .venv/bin/python -m src.pos_teste comparar   # v1 oficial x v2

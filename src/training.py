@@ -1,6 +1,6 @@
 """Treinamento reprodutível de 3 classificadores no Lending Club Dataset.
 
-Uso: python -m src.training --data data/accepted_2007_to_2018Q4.csv
+Uso: python -m src.training --data data/lending_club/accepted_2007_to_2018Q4.csv
 
 Regras metodológicas (ver docs/experimentos.md):
 - pré-processamento dentro do Pipeline, ajustado SOMENTE no treino;
