@@ -3,6 +3,7 @@
 O Ollama é simulado (mock) para o teste não depender de rede nem de hardware.
 """
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,9 @@ class AppWithModelTests(unittest.TestCase):
         train(csv, fraction=1.0, max_rows=None, maturity_filter=False, model_path=cls.model_path,
               report_dir=cls.report_dir, make_figures=True, importance_rows=200, importance_repeats=1,
               verbose=False)
+        # Fixture visual SINTÉTICA: testa a exibição do arquivo de auditoria, não sua ciência.
+        shutil.copyfile(cls.report_dir / "figures" / "calibracao_teste.png",
+                        cls.report_dir / "figures" / "auditoria_coortes.png")
         cls.patches = [
             mock.patch.object(config, "MODEL_PATH", cls.model_path),
             mock.patch.object(config, "METRICS_PATH", cls.report_dir / "metricas.json"),
@@ -89,10 +93,80 @@ class AppWithModelTests(unittest.TestCase):
     def test_carrega_e_mostra_abas(self):
         at = AppTest.from_file(APP, default_timeout=60).run()
         self.assertFalse(at.exception)
-        self.assertEqual([t.label for t in at.tabs], ["Simular empréstimo", "Desempenho dos modelos", "Dados e metodologia"])
+        self.assertEqual([b.label for b in at.sidebar.button if (b.key or "").startswith("nav-")],
+                         ["Simular empréstimo", "Desempenho dos modelos", "Dados e metodologia"])
         self.assertIn("Ollama ativo", "\n".join(m.value for m in at.sidebar.markdown))
         self.assertIsNone(_probability(at))  # antes de estimar, só o estado vazio
         self.assertIn("Preencha a proposta", _markdown(at))
+        self.assertEqual(len(at.number_input), 6)
+        self.assertEqual(len(at.selectbox), 4)
+
+    def test_editar_proposta_invalida_parecer_e_explicacao(self):
+        at = self._submit(AppTest.from_file(APP, default_timeout=60).run())
+        self.assertIsNotNone(_probability(at))
+        at.session_state["explanation"] = {"analysis_id": at.session_state["analysis"]["id"],
+                                           "text": "texto anterior", "error": None,
+                                           "seconds": 1, "warnings": [], "attempts": 1}
+        at.number_input(key="in_loan_amnt").set_value(12000.0).run()
+        self.assertFalse(at.exception)
+        self.assertIsNone(_probability(at))
+        self.assertNotIn("analysis", at.session_state)
+        self.assertNotIn("explanation", at.session_state)
+        self.assertTrue(any("alterada" in info.value for info in at.info))
+
+    def test_navegacao_preserva_proposta_e_parecer(self):
+        at = self._submit(AppTest.from_file(APP, default_timeout=60).run(), loan_amnt=12000.0)
+        probability = _probability(at)
+        at.sidebar.button(key="nav-performance").click().run()
+        self.assertFalse(at.exception)
+        self.assertEqual(len(at.get("image")), 9)
+        self.assertEqual(len(at.expander), 3)
+        at.sidebar.button(key="nav-methodology").click().run()
+        self.assertFalse(at.exception)
+        self.assertEqual(len(at.get("image")), 1)
+        at.sidebar.button(key="nav-simulate").click().run()
+        self.assertFalse(at.exception)
+        self.assertEqual(at.number_input(key="in_loan_amnt").value, 12000.0)
+        self.assertEqual(_probability(at), probability)
+
+    def test_estrutura_global_sem_header_e_creditos_compactos(self):
+        at = AppTest.from_file(APP, default_timeout=60).run()
+        self.assertFalse(at.exception)
+        self.assertNotIn('class="lr-topbar"', _markdown(at))
+        sidebar = "\n".join(item.value for item in at.sidebar.markdown)
+        self.assertNotIn("Projeto final · Uso acadêmico", sidebar)
+        self.assertIn("CARCDSI · IFSP Caraguatatuba", sidebar)
+        self.assertFalse(at.sidebar.radio)
+        self.assertNotIn("Verificar Ollama de novo", [b.label for b in at.sidebar.button])
+        self.assertEqual(at.sidebar.button(key="refresh-ollama").label, "Verificar conexão")
+        self.assertIn("Página atual: Simular empréstimo", sidebar)
+
+    def test_refresh_sidebar_reconsulta_status_sem_perder_parecer(self):
+        at = self._submit(AppTest.from_file(APP, default_timeout=60).run())
+        probability = _probability(at)
+        import requests
+        with mock.patch("src.llm.requests.get", side_effect=requests.exceptions.ConnectionError()) as get:
+            at.sidebar.button(key="refresh-ollama").click().run()
+            self.assertTrue(get.called)
+        self.assertFalse(at.exception)
+        self.assertIn("Ollama indisponível", "\n".join(m.value for m in at.sidebar.markdown))
+        self.assertEqual(_probability(at), probability)
+
+    def test_parecer_detalhado_fora_das_colunas_principais(self):
+        at = self._submit(AppTest.from_file(APP, default_timeout=60).run())
+        detail = next(b for b in at.get("flex_container") if b.proto.id.endswith("-detailed-verdict"))
+        self.assertIn(detail, at.main.children.values())
+        self.assertIn("Dados enviados ao modelo", "\n".join(m.value for m in detail.markdown))
+        self.assertIn("Importância global", "\n".join(m.value for m in detail.markdown))
+        self.assertIn("Explicação em texto", "\n".join(m.value for m in detail.markdown))
+
+    def test_previsao_disponivel_sem_ollama(self):
+        import requests
+        with mock.patch("src.llm.requests.get", side_effect=requests.exceptions.ConnectionError()):
+            at = self._submit(AppTest.from_file(APP, default_timeout=60).run())
+        self.assertFalse(at.exception)
+        self.assertIsNotNone(_probability(at))
+        self.assertTrue(any("Ollama indisponível" in item.value for item in at.info))
 
     def test_previsao_pelo_formulario(self):
         at = AppTest.from_file(APP, default_timeout=60).run()
