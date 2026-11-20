@@ -73,7 +73,8 @@ humana, não como decisão. A análise completa, incluindo subgrupos e limitaç�
 
 ```text
 lendingrisk-ai/
-├── app.py                  # interface Streamlit (proposta ao lado do parecer)
+├── app.py                  # interface Streamlit (3 páginas, resumo e parecer completo)
+├── assets/styles.css       # identidade visual e adaptação a telas menores
 ├── .streamlit/config.toml  # tema da interface (cores e fontes; funciona offline)
 ├── PENDENCIAS.md           # o que ainda falta fazer
 ├── src/
@@ -85,6 +86,7 @@ lendingrisk-ai/
 │   ├── figures.py          # gráficos PNG
 │   ├── training.py         # treino, seleção, teste único e artefatos
 │   ├── inference.py        # validação de artefatos/entradas para a interface
+│   ├── ui.py               # componentes de apresentação, sem cálculos do modelo
 │   ├── pos_teste.py        # análises complementares depois do teste (limiar, v1 x v2)
 │   ├── llm.py              # integração com o Ollama + verificação de consistência
 │   └── llm_demo.py         # demonstração documentada da LLM (perfis hipotéticos)
@@ -213,10 +215,17 @@ python -m src.training --data data/lending_club/accepted_2007_to_2018Q4.csv --fr
 python -m streamlit run app.py
 ```
 
-A interface abre em `http://localhost:8501`. Ela tem três abas:
-- **Simular empréstimo:** formulário, probabilidade, classe e explicação pela LLM.
-- **Desempenho dos modelos:** métricas do teste, comparação na validação e gráficos.
-- **Dados e metodologia:** fonte, filtros, partições e limitações.
+A interface abre em `http://localhost:8501`. A navegação lateral dá acesso a três páginas:
+
+- **Simular empréstimo:** dez campos em três grupos, resumo do risco à direita e parecer detalhado abaixo, em largura completa, com explicação pela LLM.
+- **Desempenho dos modelos:** indicadores, métricas completas, comparação na validação, nove gráficos originais e análises complementares.
+- **Dados e metodologia:** fonte, filtros, partições temporais, gráfico real de auditoria, atributos, fluxo, limitações e ambiente de treinamento.
+
+Os campos e uma previsão ainda válida são preservados ao navegar. Editar um campo
+invalida o parecer e a explicação anteriores; clique em **Estimar risco** para calcular
+novamente. No celular, o botão no canto superior esquerdo abre a navegação. Tabelas
+mantêm a rolagem horizontal e os recursos nativos do Streamlit; imagens mantêm ampliação.
+As cores e os componentes usam recursos locais, sem fontes ou bibliotecas visuais externas.
 
 Opções do treinamento: `--no-maturity-filter` reproduz o comportamento do starter
 (sem filtro de maturidade), e `--no-figures` não gera os gráficos.
@@ -251,7 +260,7 @@ modelo, o limiar nem `reports/metricas.json`. Os detalhes estão na seção 5 de
 .venv/bin/python -m src.pos_teste comparar   # v1 oficial x v2
 ```
 
-As saídas ficam em `reports/analises_pos_teste/`. A aba "Desempenho dos modelos" do app
+As saídas ficam em `reports/analises_pos_teste/`. A página "Desempenho dos modelos" do app
 também as mostra.
 
 ## LLM local (Ollama)
