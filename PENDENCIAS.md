@@ -22,8 +22,11 @@ Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git
 
 ## Ambiente Windows do Hyan
 
-- [ ] **Instalar e testar o Ollama com `llama3.2:3b`.** Em 19/11/2026 o serviço não
-  estava acessível. Formulário, previsões e layout funcionam sem ele.
+Ollama 0.40.16 instalado e testado em 19/11/2026 com `llama3.2:3b` (2 GB).
+O teste da interface com o serviço real gerou uma explicação em 31,8 s, em uma
+tentativa, sem avisos do verificador. A probabilidade de 10,7% do perfil hipotético
+foi preservada. Evidências locais em `.venv/teste-ollama-real.log` e
+`.venv/ollama-verificacao.json`.
 
 Instalação Python validada em 19/11/2026: Python 3.12.16 em `.venv`, 78 testes
 aprovados, auditoria do CSV real, treino dos três modelos e simulação na interface.
