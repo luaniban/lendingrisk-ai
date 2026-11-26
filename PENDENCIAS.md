@@ -1,7 +1,7 @@
 # Pendências do LendingRisk AI
 
 Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git log`).
-Última revisão: 19/11/2026.
+Última revisão: 26/11/2026.
 
 ## Aguardando retorno do Luan
 
@@ -9,10 +9,15 @@ Lista viva: cada item sai daqui quando for concluído (o histórico fica no `git
   proposta fica ao lado do parecer, há uma régua de risco e o veredito aparece como carimbo.
   Testar em `http://127.0.0.1:8501` e apontar o que mudar.
 
-## Entregas acadêmicas (adiadas a pedido)
+## Entregas acadêmicas
 
-- [ ] Artigo científico (roteiro em `docs/artigo_roteiro.md`).
-- [ ] Pitch (roteiro em `docs/pitch_roteiro.md`).
+- [ ] **Artigo: compilar no Overleaf.** O texto está pronto em `artigo/` (`main.tex`,
+  `sbc-template.bib` e `figuras/`). Falta colar no template SBC do Overleaf, trocar
+  `EMAIL-HYAN` e `EMAIL-LUAN` pelos e-mails reais, compilar, conferir o PDF e o limite
+  de páginas do professor, e entregar.
+- [ ] **Pitch: gravar o vídeo.** O roteiro com falas está pronto em
+  `docs/pitch_roteiro.md` (cerca de 4 min 30 s). Falta gravar, editar (cortar a espera
+  da LLM) e entregar.
 
 ## Publicação e reprodutibilidade
 
